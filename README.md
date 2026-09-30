@@ -9,6 +9,7 @@ LUNO'yu benzerlerinden ayıran taraf, geleceğe dair uyarı vermesidir: her gör
 ## Özellikler
 
 **Temel modüller**
+
 - Proje ve görev yönetimi (To Do / In Progress / Done)
 - Kullanıcı ve rol yönetimi (Yönetici, Ekip Üyesi)
 - Takvim, Gantt şeması ve Kanban panosu
@@ -16,6 +17,7 @@ LUNO'yu benzerlerinden ayıran taraf, geleceğe dair uyarı vermesidir: her gör
 - Raporlama: yüzdelik ilerleme, kişi bazlı ve dönemsel raporlar
 
 **Akıllı özellikler**
+
 - Gecikme riski tahmini ve kapasite uyarısı
 - "Bugün ne yapmalıyım?" listesi
 - Hızlı görev ekleme (`Rapor API'si @can #backend cuma`)
@@ -24,20 +26,48 @@ LUNO'yu benzerlerinden ayıran taraf, geleceğe dair uyarı vermesidir: her gör
 
 ## Teknolojiler
 
-| Katman | Teknoloji |
-|---|---|
-| Frontend | React + Vite (TypeScript), Tailwind CSS, shadcn/ui |
-| Backend | Python, FastAPI |
-| Veritabanı | PostgreSQL, SQLAlchemy, Alembic |
-| LLM | Groq (yedek: Gemini) |
-| Ortam ve yayın | Docker, GitHub Actions, Render, Supabase |
+| Katman         | Teknoloji                                          |
+| -------------- | -------------------------------------------------- |
+| Frontend       | React + Vite (TypeScript), Tailwind CSS, shadcn/ui |
+| Backend        | Python, FastAPI                                    |
+| Veritabanı     | PostgreSQL, SQLAlchemy, Alembic                    |
+| LLM            | Groq (yedek: Gemini)                               |
+| Ortam ve yayın | Docker, GitHub Actions, Render, Supabase           |
 
 ## Çalışma düzeni
 
-- Proje Scrum ile, 2 haftalık sprintler halinde geliştirilir.
+- Proje Scrum ile, **1 haftalık sprintler** halinde geliştirilir.
 - İş takibi GitHub Projects üzerinden yapılır.
-- Her görev kendi branch'inde geliştirilir: `feature/<issue-no>-kisa-ad`
-- Tüm değişiklikler `develop` branch'ine PR ile gönderilir ve en az bir kişi tarafından incelenir.
+
+### Branch düzeni
+
+- `main`: Sadece çalışan, demo edilebilir kod
+- `develop`: Tüm işlerin birleştiği ana geliştirme branch'i
+- Her ekip üyesi kendi adıyla bir branch'te çalışır (ör. `sena`). Küçük harf, Türkçe karakter yok.
+- `main` ve `develop`'a doğrudan push yapılmaz, değişiklikler Pull Request ile gönderilir.
+- PR'lar Proje Yöneticisi veya Scrum Master tarafından onaylanır.
+
+### Günlük akış
+
+1. Çalışmaya başlamadan önce `git pull origin develop` ile branch'ini güncelle.
+2. Görev bitince commit'le ve push'la.
+3. Kendi branch'inden `develop`'a PR aç, açıklamaya `Closes #issue-no` yaz.
+
+### Commit mesajı kuralı
+
+`tür: kısa açıklama (#issue-no)`
+
+| Tür        | Ne zaman        |
+| ---------- | --------------- |
+| `feat`     | Yeni özellik    |
+| `fix`      | Hata düzeltme   |
+| `docs`     | Doküman         |
+| `style`    | Görünüm, format |
+| `refactor` | Kod düzenleme   |
+| `test`     | Test ekleme     |
+| `chore`    | Kurulum, ayar   |
+
+Örnek: `feat: görev oluşturma API'si eklendi (#12)`
 
 ## Kurulum
 
