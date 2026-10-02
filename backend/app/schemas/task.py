@@ -31,7 +31,7 @@ class TaskUpdate(BaseModel):
     module_name: Optional[str] = None
 
 class TaskAssign(BaseModel):
-    assigned_to_id: Optional[int]
+    assigned_to_id: Optional[int] = None
 
 class TaskStatusUpdate(BaseModel):
     status: TaskStatus

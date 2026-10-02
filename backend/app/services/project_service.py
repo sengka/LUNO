@@ -35,9 +35,19 @@ class ProjectService:
         result = []
         for p in projects:
             task_count = db.query(func.count(Task.id)).filter(Task.project_id == p.id).scalar() or 0
-            p_dict = ProjectResponse.model_validate(p)
-            p_dict.task_count = task_count
-            result.append(p_dict)
+            p_res = ProjectResponse(
+                id=p.id,
+                name=p.name,
+                description=p.description,
+                status=p.status,
+                start_date=p.start_date,
+                end_date=p.end_date,
+                created_by_id=p.created_by_id,
+                created_at=p.created_at,
+                updated_at=p.updated_at,
+                task_count=task_count
+            )
+            result.append(p_res)
         return result
 
     @staticmethod

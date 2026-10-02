@@ -152,6 +152,7 @@ class ReportService:
         proj_query = db.query(Project)
         projects = proj_query.all()
         for p in projects:
+            p_status_str = p.status.value if hasattr(p.status, 'value') else str(p.status)
             if p.start_date or p.end_date:
                 events.append(CalendarEventResponse(
                     id=p.id,
@@ -159,7 +160,7 @@ class ReportService:
                     event_type="PROJECT",
                     start_date=p.start_date,
                     end_date=p.end_date,
-                    status=p.status.value,
+                    status=p_status_str,
                     project_id=p.id,
                     project_name=p.name,
                     assigned_to_id=None
@@ -172,6 +173,7 @@ class ReportService:
         
         tasks = task_query.all()
         for t in tasks:
+            t_status_str = t.status.value if hasattr(t.status, 'value') else str(t.status)
             if t.start_date or t.due_date:
                 proj_name = t.project.name if t.project else None
                 events.append(CalendarEventResponse(
@@ -180,7 +182,7 @@ class ReportService:
                     event_type="TASK",
                     start_date=t.start_date or t.due_date,
                     end_date=t.due_date or t.start_date,
-                    status=t.status.value,
+                    status=t_status_str,
                     project_id=t.project_id,
                     project_name=proj_name,
                     assigned_to_id=t.assigned_to_id
@@ -214,6 +216,7 @@ class ReportService:
 
         for p in projects:
             task_items: List[GanttTaskItem] = []
+            p_status_str = p.status.value if hasattr(p.status, 'value') else str(p.status)
             for t in p.tasks:
                 prog = 0.0
                 if t.status == TaskStatus.DONE:
@@ -235,7 +238,7 @@ class ReportService:
             gantt_projects.append(GanttProjectItem(
                 project_id=p.id,
                 project_name=p.name,
-                status=p.status.value,
+                status=p_status_str,
                 start_date=p.start_date,
                 end_date=p.end_date,
                 tasks=task_items
