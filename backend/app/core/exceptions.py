@@ -46,3 +46,20 @@ class ForbiddenException(CustomAPIException):
             code="FORBIDDEN",
             message=message
         )
+
+class CannotChangeOwnRoleException(CustomAPIException):
+    def __init__(self):
+        super().__init__(
+            status_code=400,
+            code="CANNOT_CHANGE_OWN_ROLE",
+            message="Kendi rolünüzü değiştiremezsiniz."
+        )
+
+class UserNotFoundException(CustomAPIException):
+    def __init__(self):
+        super().__init__(
+            status_code=404,
+            code="USER_NOT_FOUND",
+            message="Kullanıcı bulunamadı."
+        )
+
