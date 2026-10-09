@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, EmailStr, Field, field_serializer, ConfigDict
+from app.models.user import SystemRole
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -30,6 +31,15 @@ class UserResponse(BaseModel):
     def serialize_dt(self, dt: datetime, _info):
         return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+class UserRoleUpdateRequest(BaseModel):
+    role: SystemRole = Field(..., description="Yeni sistem rolü (YONETICI veya EKIP_UYESI)")
+
+class UserListResponse(BaseModel):
+    items: List[UserResponse]
+    total: int
+    page: int
+    limit: int
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -44,3 +54,4 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
+
