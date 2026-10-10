@@ -71,7 +71,63 @@ LUNO'yu benzerlerinden ayıran taraf, geleceğe dair uyarı vermesidir: her gör
 
 ## Kurulum
 
-Kurulum adımları proje iskeleti hazırlandığında eklenecektir.
+### Backend
+
+Gereksinim: Python 3.11 veya üzeri. Komutlar `backend/` klasöründe çalıştırılır.
+
+```bash
+cd backend
+
+# 1. Sanal ortam (bir kez)
+python -m venv .venv
+source .venv/Scripts/activate      # Windows (Git Bash)
+# .venv\Scripts\Activate.ps1       # Windows (PowerShell)
+# source .venv/bin/activate        # macOS / Linux
+
+# 2. Paketler
+pip install -r requirements.txt
+
+# 3. Ortam değişkenleri (bir kez)
+cp .env.example .env               # PowerShell: Copy-Item .env.example .env
+
+# 4. Veritabanı tabloları
+alembic upgrade head
+
+# 5. (İsteğe bağlı) Örnek veri: 10 kullanıcı, 2 proje, 19 görev · şifre: Luno1234
+python -m app.seed
+
+# 6. Uygulamayı başlat
+uvicorn app.main:app --reload
+```
+
+Uygulama `http://localhost:8000`, API dokümantasyonu `http://localhost:8000/docs` adresinde açılır.
+
+**Veritabanı:** Varsayılan `.env` SQLite kullanır (`backend/luno.db`). PostgreSQL için `.env` içindeki adresi değiştirin:
+`DATABASE_URL=postgresql+psycopg2://kullanici:sifre@localhost:5432/luno`
+
+**Tablolar yalnızca Alembic ile oluşturulur ve değiştirilir.** Uygulama açılışta tablo oluşturmaz.
+
+- `develop`'u her çektiğinizde `alembic upgrade head` çalıştırın; yeni migration varsa uygulanır.
+- Bir modele alan veya tablo eklediyseniz migration oluşturun, oluşan dosyayı kontrol edip modelle birlikte commit'leyin:
+  ```bash
+  alembic revision --autogenerate -m "kisa aciklama"
+  alembic upgrade head
+  ```
+- `alembic upgrade head` "table already exists" hatası verirse veritabanınız Alembic'ten önce oluşturulmuştur. SQLite kullanıyorsanız `backend/luno.db` dosyasını silip komutu tekrar çalıştırın.
+
+**Örnek veri seçenekleri:** `python -m app.seed --reset` tabloları boşaltıp yeniden yükler; `python -m app.seed --buyuk` ayrıca 200 görev ve 20 üyeli bir yük testi projesi ekler.
+
+**Testler:**
+
+```bash
+python -m pytest
+```
+
+Testler bellek içi ayrı bir SQLite veritabanı kullanır, geliştirme veritabanınıza dokunmaz.
+
+### Frontend
+
+Frontend kurulum adımları, frontend iskeleti `develop`'a eklendiğinde yazılacaktır.
 
 ## Ekip
 
