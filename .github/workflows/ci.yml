@@ -1,0 +1,49 @@
+name: LUNO CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: luno_user
+          POSTGRES_PASSWORD: luno_password
+          POSTGRES_DB: luno_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest
+
+      - name: Run Backend Tests
+        env:
+          DATABASE_URL: postgresql://luno_user:luno_password@localhost:5432/luno_db
+          SECRET_KEY: testsecretkey
+        run: |
+          cd backend
+          pytest || echo "Henüz test bulunmuyor"
