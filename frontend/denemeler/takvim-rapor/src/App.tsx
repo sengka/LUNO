@@ -2,6 +2,7 @@ import { useState } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import trLocale from '@fullcalendar/core/locales/tr'
+import GanttDemo from './GanttDemo'
 import './App.css'
 
 const ornekGorevler = [
@@ -67,6 +68,7 @@ function App() {
           ? `Seçilen görev: ${secilenGorev}`
           : 'Detayını görmek için takvimdeki bir göreve tıkla.'}
       </p>
+      <GanttDemo />
     </main>
   )
 }

@@ -78,3 +78,27 @@
     font-size: 20px;
   }
 }
+.gantt-section {
+  margin-top: 40px;
+}
+
+.gantt-section h2 {
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.gantt-section p {
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.gantt-card {
+  overflow-x: auto;
+}
+
+.gantt-summary {
+  padding-left: 20px;
+  color: #475569;
+  line-height: 1.8;
+}
