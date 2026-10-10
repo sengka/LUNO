@@ -102,3 +102,26 @@
   color: #475569;
   line-height: 1.8;
 }
+.report-section {
+  margin-top: 40px;
+}
+
+.report-section h2 {
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.report-section p {
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding-left: 20px;
+  color: #475569;
+  line-height: 1.8;
+}
