@@ -1,0 +1,80 @@
+.demo {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.demo-header {
+  margin-bottom: 24px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: #4338ca;
+  background: #e0e7ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.demo-header h1 {
+  margin: 16px 0 8px;
+  font-size: 32px;
+}
+
+.demo-header p,
+.selection {
+  color: #475569;
+  line-height: 1.6;
+}
+
+.calendar-card {
+  padding: 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 5%);
+}
+
+.fc {
+  --fc-border-color: #e2e8f0;
+  --fc-button-bg-color: #4338ca;
+  --fc-button-border-color: #4338ca;
+  --fc-button-hover-bg-color: #3730a3;
+  --fc-button-hover-border-color: #3730a3;
+  --fc-button-active-bg-color: #312e81;
+  --fc-button-active-border-color: #312e81;
+  --fc-today-bg-color: #eef2ff;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 22px;
+}
+
+.fc-event {
+  cursor: pointer;
+}
+
+.selection {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .demo {
+    padding: 24px 12px;
+  }
+
+  .calendar-card {
+    padding: 12px;
+  }
+
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 20px;
+  }
+}
