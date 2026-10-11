@@ -4,12 +4,11 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import engine, Base
 from app.api.v1.api import api_router
 from app.core.exceptions import CustomAPIException
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Tablolar uygulama açılışında oluşturulmaz; şema yalnızca Alembic ile yönetilir (NFR-018).
+# Kurulumda bir kez: alembic upgrade head
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
