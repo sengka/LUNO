@@ -245,3 +245,87 @@ def test_get_project_detail_not_found(client: TestClient):
     assert res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
     assert res.json()["error"]["message"] == "Proje bulunamadı."
 
+# ==========================================
+# US-008 (Issue #106) - PATCH /projects/{id} Testleri
+# ==========================================
+
+def test_update_project_as_admin_success(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Patch", "patch_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "patch_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Eski Proje Adı",
+        "description": "Eski açıklama",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    patch_res = client.patch(f"/api/v1/projects/{proj_id}", json={
+        "name": "Yeni Proje Adı",
+        "description": "Güncellenmiş açıklama",
+        "end_date": "2026-11-15"
+    }, headers=headers)
+    assert patch_res.status_code == 200
+    data = patch_res.json()
+    assert data["id"] == proj_id
+    assert data["name"] == "Yeni Proje Adı"
+    assert data["description"] == "Güncellenmiş açıklama"
+    assert data["end_date"] == "2026-11-15"
+    assert data["start_date"] == "2026-10-01"
+
+def test_update_project_invalid_date_range(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin DatePatch", "patch_date@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "patch_date@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Tarih Projesi",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-20"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    # Try setting end_date before start_date
+    patch_res = client.patch(f"/api/v1/projects/{proj_id}", json={
+        "end_date": "2026-10-05"
+    }, headers=headers)
+    assert patch_res.status_code == 400
+    assert patch_res.json()["error"]["code"] == "INVALID_DATE_RANGE"
+
+def test_update_project_as_regular_user_forbidden(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin P", "admin_p@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    admin_token = get_auth_token(client, "admin_p@luno.com")
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Admin Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    proj_id = create_res.json()["id"]
+
+    member = create_user(client, "Üye P", "member_p@luno.com")
+    member_token = get_auth_token(client, "member_p@luno.com")
+
+    patch_res = client.patch(f"/api/v1/projects/{proj_id}", json={
+        "name": "Değiştirilmek İstenen Ad"
+    }, headers={"Authorization": f"Bearer {member_token}"})
+    assert patch_res.status_code == 403
+    assert patch_res.json()["error"]["code"] == "FORBIDDEN"
+
+def test_update_project_not_found(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin 404Patch", "patch_404@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "patch_404@luno.com")
+
+    patch_res = client.patch("/api/v1/projects/99999", json={
+        "name": "Olmayan Proje"
+    }, headers={"Authorization": f"Bearer {token}"})
+    assert patch_res.status_code == 404
+    assert patch_res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+
+

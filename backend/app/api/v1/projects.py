@@ -11,6 +11,7 @@ from app.models.task import Task
 from app.models.enums import ACTIVE_TASK_STATUSES, TaskStatus
 from app.schemas.project import (
     ProjectCreate,
+    ProjectUpdate,
     ProjectResponse,
     ProjectListResponse,
     UserSummary
@@ -176,4 +177,47 @@ def get_project_detail(
         raise ProjectAccessDeniedException("Bu projeye erişim yetkiniz yok.")
 
     return build_project_response(project, db)
+
+@router.patch(
+    "/{project_id}",
+    response_model=ProjectResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Projeyi Düzenle (US-008 / 5.4)"
+)
+def update_project(
+    project_id: int,
+    project_in: ProjectUpdate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Mevcut bir projenin bilgilerini düzenler.
+    Yalnızca YONETICI rolüne sahip kullanıcılar düzenleyebilir (FR-018).
+    Bitiş tarihi başlangıç tarihinden önce olamaz (400 INVALID_DATE_RANGE).
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException("Proje bulunamadı.")
+
+    new_start = project_in.start_date if project_in.start_date is not None else project.start_date
+    new_end = project_in.end_date if project_in.end_date is not None else project.end_date
+
+    if new_end < new_start:
+        raise InvalidDateRangeException("Bitiş tarihi başlangıç tarihinden önce olamaz.")
+
+    if project_in.name is not None:
+        project.name = project_in.name
+    if project_in.description is not None:
+        project.description = project_in.description
+    if project_in.start_date is not None:
+        project.start_date = project_in.start_date
+    if project_in.end_date is not None:
+        project.end_date = project_in.end_date
+
+    project.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(project)
+
+    return build_project_response(project, db)
+
 
