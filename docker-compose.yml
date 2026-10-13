@@ -1,10 +1,6 @@
-version: '3.8'
-
 services:
   db:
-    image: postgres:15-alpine
-    container_name: luno_postgres
-    restart: always
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-luno_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-luno_password}
@@ -13,28 +9,33 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-luno_user} -d ${POSTGRES_DB:-luno_db}
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: luno_backend
-    restart: always
+    build: ./backend
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://luno_user:luno_password@db:5432/luno_db}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-luno_user}:${POSTGRES_PASSWORD:-luno_password}@db:5432/${POSTGRES_DB:-luno_db}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY .env dosyasinda tanimlanmali}
+      ACCESS_TOKEN_EXPIRE_SECONDS: ${ACCESS_TOKEN_EXPIRE_SECONDS:-86400}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: luno_frontend
-    restart: always
+    build: ./frontend
     ports:
-      - "3000:3000"
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
     depends_on:
       - backend
 

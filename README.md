@@ -71,6 +71,24 @@ LUNO'yu benzerlerinden ayıran taraf, geleceğe dair uyarı vermesidir: her gör
 
 ## Kurulum
 
+### Docker Compose ile çalıştırma
+
+Gereksinim: Docker Desktop ve Docker Compose v2.
+
+Proje kök klasöründe terminal açıp şu komutları çalıştırın:
+
+```bash
+cp .env.example .env
+```
+
+`.env` dosyasını açıp `SECRET_KEY` değerini uzun, rastgele bir değerle değiştirin. Ardından:
+
+```bash
+docker compose up --build
+```
+
+İlk açılışta veritabanı hazır olunca backend Alembic migration'larını çalıştırır. Arayüz `http://localhost:5173`, backend dokümantasyonu `http://localhost:8000/docs` adresindedir. Durdurmak için terminalde `Ctrl+C` tuşlarına basıp `docker compose down` çalıştırın.
+
 ### Backend
 
 Gereksinim: Python 3.11 veya üzeri. Komutlar `backend/` klasöründe çalıştırılır.
