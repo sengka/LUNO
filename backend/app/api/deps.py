@@ -4,9 +4,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.user import User, RevokedToken
+from app.models.user import User, RevokedToken, SystemRole
 from app.core.security import decode_access_token
-from app.core.exceptions import UnauthorizedException
+from app.core.exceptions import UnauthorizedException, ForbiddenException
 
 security_bearer = HTTPBearer(auto_error=False)
 
@@ -43,9 +43,17 @@ def get_current_user(
     
     return user
 
+def require_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if current_user.role != SystemRole.YONETICI.value:
+        raise ForbiddenException("Bu işlem için yetkiniz yok.")
+    return current_user
+
 def get_raw_token(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer)
 ) -> str:
     if not credentials or not credentials.credentials:
         raise UnauthorizedException("Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.")
     return credentials.credentials
+
