@@ -328,4 +328,62 @@ def test_update_project_not_found(client: TestClient, db_session: Session):
     assert patch_res.status_code == 404
     assert patch_res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
 
+# ==========================================
+# US-009 (Issue #109) - DELETE /projects/{id} Testleri
+# ==========================================
+
+def test_delete_project_as_admin_success(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Del", "del_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "del_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Silinecek Proje",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    # Verify project and its member exist
+    assert db_session.query(Project).filter(Project.id == proj_id).first() is not None
+    assert db_session.query(ProjectMember).filter(ProjectMember.project_id == proj_id).count() == 1
+
+    # Delete project
+    del_res = client.delete(f"/api/v1/projects/{proj_id}", headers=headers)
+    assert del_res.status_code == 204
+
+    # Verify project and its member are deleted (cascade FR-020)
+    assert db_session.query(Project).filter(Project.id == proj_id).first() is None
+    assert db_session.query(ProjectMember).filter(ProjectMember.project_id == proj_id).count() == 0
+
+def test_delete_project_as_regular_user_forbidden(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin D", "admin_d@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    admin_token = get_auth_token(client, "admin_d@luno.com")
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Korumalı Proje",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    proj_id = create_res.json()["id"]
+
+    member = create_user(client, "Üye D", "member_d@luno.com")
+    member_token = get_auth_token(client, "member_d@luno.com")
+
+    del_res = client.delete(f"/api/v1/projects/{proj_id}", headers={"Authorization": f"Bearer {member_token}"})
+    assert del_res.status_code == 403
+    assert del_res.json()["error"]["code"] == "FORBIDDEN"
+
+def test_delete_project_not_found(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin 404Del", "del_404@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "del_404@luno.com")
+
+    del_res = client.delete("/api/v1/projects/99999", headers={"Authorization": f"Bearer {token}"})
+    assert del_res.status_code == 404
+    assert del_res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+
+
 

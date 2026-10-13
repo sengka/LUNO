@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, Response
 from sqlalchemy.orm import Session
+
+
 
 from app.database import get_db
 from app.models.user import User
@@ -219,5 +221,30 @@ def update_project(
     db.refresh(project)
 
     return build_project_response(project, db)
+
+@router.delete(
+    "/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Projeyi Sil (US-009 / 5.5)"
+)
+def delete_project(
+    project_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Belirtilen projeyi siler.
+    Yalnızca YONETICI rolüne sahip kullanıcılar silebilir (FR-019).
+    Projeye bağlı görevler ve üyelikler de birlikte silinir (FR-020).
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException("Proje bulunamadı.")
+
+    db.delete(project)
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 
