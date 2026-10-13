@@ -124,3 +124,124 @@ def test_create_project_validation_error(client: TestClient, db_session: Session
     response = client.post("/api/v1/projects", json=payload, headers=headers)
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+# ==========================================
+# US-007 (Issue #103) - GET /projects & GET /projects/{id} Testleri
+# ==========================================
+
+def test_list_my_projects_only_shows_member_projects(client: TestClient, db_session: Session):
+    admin = create_user(client, "Proje Lideri", "leader@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    admin_token = get_auth_token(client, "leader@luno.com")
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # Admin creates Project A and Project B
+    res_a = client.post("/api/v1/projects", json={
+        "name": "Proje A",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=admin_headers)
+    proj_a = res_a.json()
+
+    client.post("/api/v1/projects", json={
+        "name": "Proje B",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=admin_headers)
+
+    # Member user
+    member = create_user(client, "Ekip Üyesi Mert", "mert@luno.com")
+    member_token = get_auth_token(client, "mert@luno.com")
+    member_headers = {"Authorization": f"Bearer {member_token}"}
+
+    # Initially Mert is in 0 projects
+    res_empty = client.get("/api/v1/projects", headers=member_headers)
+    assert res_empty.status_code == 200
+    assert res_empty.json()["total"] == 0
+    assert len(res_empty.json()["items"]) == 0
+
+    # Add Mert to Proje A in DB
+    new_mem = ProjectMember(project_id=proj_a["id"], user_id=member["id"])
+    db_session.add(new_mem)
+    db_session.commit()
+
+    # Now Mert should see only Proje A
+    res_one = client.get("/api/v1/projects", headers=member_headers)
+    assert res_one.status_code == 200
+    assert res_one.json()["total"] == 1
+    assert res_one.json()["items"][0]["id"] == proj_a["id"]
+    assert res_one.json()["items"][0]["name"] == "Proje A"
+
+def test_list_my_projects_pagination(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Page", "page_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "page_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for i in range(5):
+        client.post("/api/v1/projects", json={
+            "name": f"Proje {i}",
+            "start_date": "2026-10-01",
+            "end_date": "2026-10-31"
+        }, headers=headers)
+
+    res = client.get("/api/v1/projects?page=2&limit=2", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total"] == 5
+    assert data["page"] == 2
+    assert data["limit"] == 2
+    assert len(data["items"]) == 2
+
+def test_get_project_detail_success(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Detail", "detail_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "detail_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res_create = client.post("/api/v1/projects", json={
+        "name": "Detay Projesi",
+        "description": "Detay açıklama",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = res_create.json()["id"]
+
+    res_get = client.get(f"/api/v1/projects/{proj_id}", headers=headers)
+    assert res_get.status_code == 200
+    d = res_get.json()
+    assert d["id"] == proj_id
+    assert d["name"] == "Detay Projesi"
+    assert d["description"] == "Detay açıklama"
+    assert d["member_count"] == 1
+    assert d["progress_percent"] == 0.0
+
+def test_get_project_detail_not_member_access_denied(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Boss", "boss_user@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    admin_token = get_auth_token(client, "boss_user@luno.com")
+
+    res_create = client.post("/api/v1/projects", json={
+        "name": "Gizli Proje",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    proj_id = res_create.json()["id"]
+
+    other_user = create_user(client, "Dışarıdaki Kullanıcı", "outsider@luno.com")
+    other_token = get_auth_token(client, "outsider@luno.com")
+
+    res = client.get(f"/api/v1/projects/{proj_id}", headers={"Authorization": f"Bearer {other_token}"})
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+    assert res.json()["error"]["message"] == "Bu projeye erişim yetkiniz yok."
+
+def test_get_project_detail_not_found(client: TestClient):
+    user = create_user(client, "Test User", "test_404@luno.com")
+    token = get_auth_token(client, "test_404@luno.com")
+
+    res = client.get("/api/v1/projects/99999", headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+    assert res.json()["error"]["message"] == "Proje bulunamadı."
+

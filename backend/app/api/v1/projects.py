@@ -12,9 +12,14 @@ from app.models.enums import ACTIVE_TASK_STATUSES, TaskStatus
 from app.schemas.project import (
     ProjectCreate,
     ProjectResponse,
+    ProjectListResponse,
     UserSummary
 )
-from app.core.exceptions import InvalidDateRangeException
+from app.core.exceptions import (
+    InvalidDateRangeException,
+    ProjectNotFoundException,
+    ProjectAccessDeniedException
+)
 from app.api.deps import get_current_user, require_admin
 
 router = APIRouter(prefix="/projects", tags=["Projeler"])
@@ -64,6 +69,38 @@ def build_project_response(project: Project, db: Session) -> ProjectResponse:
         updated_at=project.updated_at
     )
 
+@router.get(
+    "",
+    response_model=ProjectListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Projelerimi Listele (US-007 / 5.1)"
+)
+def list_my_projects(
+    page: int = Query(1, ge=1, description="Sayfa numarası (varsayılan: 1)"),
+    limit: int = Query(10, ge=1, le=100, description="Sayfa başına öge sayısı (varsayılan: 10)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Oturum açmış kullanıcının üyesi olduğu projeleri listeler (FR-017).
+    """
+    query = (
+        db.query(Project)
+        .join(ProjectMember, ProjectMember.project_id == Project.id)
+        .filter(ProjectMember.user_id == current_user.id)
+    )
+
+    total = query.count()
+    offset = (page - 1) * limit
+    projects = query.order_by(Project.id.asc()).offset(offset).limit(limit).all()
+
+    return ProjectListResponse(
+        items=[build_project_response(p, db) for p in projects],
+        total=total,
+        page=page,
+        limit=limit
+    )
+
 @router.post(
     "",
     response_model=ProjectResponse,
@@ -110,3 +147,33 @@ def create_project(
     db.refresh(new_project)
 
     return build_project_response(new_project, db)
+
+@router.get(
+    "/{project_id}",
+    response_model=ProjectResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Proje Detayı (US-007 / US-022 / 5.3)"
+)
+def get_project_detail(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Belirtilen projenin detayını getirir.
+    Kullanıcı projenin üyesi olmalıdır (FR-013).
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException("Proje bulunamadı.")
+
+    is_member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not is_member:
+        raise ProjectAccessDeniedException("Bu projeye erişim yetkiniz yok.")
+
+    return build_project_response(project, db)
+
