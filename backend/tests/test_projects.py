@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 from app.models.user import User, SystemRole
 from app.models.project import Project
 from app.models.project_member import ProjectMember
+from app.models.task import Task
+from app.models.enums import TaskStatus
+
 
 def create_user(client: TestClient, full_name: str, email: str, password: str = "Password123") -> dict:
     res = client.post("/api/v1/auth/register", json={
@@ -384,6 +387,226 @@ def test_delete_project_not_found(client: TestClient, db_session: Session):
     del_res = client.delete("/api/v1/projects/99999", headers={"Authorization": f"Bearer {token}"})
     assert del_res.status_code == 404
     assert del_res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+
+# ==========================================
+# US-010 (Issue #112) - Proje Üyeleri Testleri
+# ==========================================
+
+def test_list_project_members_success(client: TestClient, db_session: Session):
+    admin = create_user(client, "Yönetici Canan", "canan@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "canan@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Üye Test Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    res = client.get(f"/api/v1/projects/{proj_id}/members", headers=headers)
+    assert res.status_code == 200
+    members = res.json()
+    assert len(members) == 1
+    assert members[0]["user"]["id"] == admin["id"]
+    assert members[0]["email"] == "canan@luno.com"
+    assert members[0]["system_role"] == "YONETICI"
+    assert members[0]["technical_role"] is None
+
+def test_list_project_members_access_denied_for_non_member(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Mem", "mem_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    admin_token = get_auth_token(client, "mem_admin@luno.com")
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Özel Proje",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    proj_id = create_res.json()["id"]
+
+    non_member = create_user(client, "Dışarıdaki", "outsider_mem@luno.com")
+    token = get_auth_token(client, "outsider_mem@luno.com")
+
+    res = client.get(f"/api/v1/projects/{proj_id}/members", headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+def test_add_project_member_success(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Add", "add_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "add_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Ekip Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    new_user = create_user(client, "Geliştirici Tolga", "tolga@luno.com")
+
+    add_res = client.post(f"/api/v1/projects/{proj_id}/members", json={
+        "email": "tolga@luno.com",
+        "technical_role": "Backend Geliştirici"
+    }, headers=headers)
+    assert add_res.status_code == 201
+    data = add_res.json()
+    assert data["user"]["id"] == new_user["id"]
+    assert data["email"] == "tolga@luno.com"
+    assert data["technical_role"] == "Backend Geliştirici"
+    assert data["system_role"] == "EKIP_UYESI"
+
+    # Verify members count increased in detail endpoint
+    detail_res = client.get(f"/api/v1/projects/{proj_id}", headers=headers)
+    assert detail_res.json()["member_count"] == 2
+
+def test_add_project_member_user_not_found(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Add404", "add404_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "add404_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Proje 404",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    add_res = client.post(f"/api/v1/projects/{proj_id}/members", json={
+        "email": "olmayan@luno.com"
+    }, headers=headers)
+    assert add_res.status_code == 404
+    assert add_res.json()["error"]["code"] == "USER_NOT_FOUND"
+
+def test_add_project_member_already_member(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Dup", "dup_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "dup_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Çift Üye Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    # Admin is already member; try adding admin again
+    add_res = client.post(f"/api/v1/projects/{proj_id}/members", json={
+        "email": "dup_admin@luno.com"
+    }, headers=headers)
+    assert add_res.status_code == 409
+    assert add_res.json()["error"]["code"] == "ALREADY_MEMBER"
+
+def test_add_project_member_as_regular_user_forbidden(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Forb", "forb_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    admin_token = get_auth_token(client, "forb_admin@luno.com")
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "İzin Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    proj_id = create_res.json()["id"]
+
+    member = create_user(client, "Normal Üye", "regular_add@luno.com")
+    member_token = get_auth_token(client, "regular_add@luno.com")
+
+    target = create_user(client, "Hedef", "target@luno.com")
+
+    add_res = client.post(f"/api/v1/projects/{proj_id}/members", json={
+        "email": "target@luno.com"
+    }, headers={"Authorization": f"Bearer {member_token}"})
+    assert add_res.status_code == 403
+    assert add_res.json()["error"]["code"] == "FORBIDDEN"
+
+def test_remove_project_member_success_unassigns_tasks(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Rem", "rem_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "rem_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Çıkarma Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    member_to_remove = create_user(client, "Çıkarılacak Üye", "remove_me@luno.com")
+    client.post(f"/api/v1/projects/{proj_id}/members", json={
+        "email": "remove_me@luno.com"
+    }, headers=headers)
+
+    # Assign a task to this member in DB
+    task = Task(
+        project_id=proj_id,
+        title="Üyenin Görevi",
+        status=TaskStatus.TODO,
+        assignee_id=member_to_remove["id"]
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    assert task.assignee_id == member_to_remove["id"]
+
+    # Remove the member
+    del_res = client.delete(f"/api/v1/projects/{proj_id}/members/{member_to_remove['id']}", headers=headers)
+    assert del_res.status_code == 204
+
+    # Verify task is now unassigned (assignee_id == None, FR-022)
+    db_session.expire_all()
+    refreshed_task = db_session.query(Task).filter(Task.id == task.id).first()
+    assert refreshed_task.assignee_id is None
+
+    # Verify member is gone from project_members
+    mem_check = db_session.query(ProjectMember).filter(
+        ProjectMember.project_id == proj_id,
+        ProjectMember.user_id == member_to_remove["id"]
+    ).first()
+    assert mem_check is None
+
+def test_remove_project_member_cannot_remove_self(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Self", "self_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "self_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Kendini Çıkarma Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    del_res = client.delete(f"/api/v1/projects/{proj_id}/members/{admin['id']}", headers=headers)
+    assert del_res.status_code == 400
+    assert del_res.json()["error"]["code"] == "CANNOT_REMOVE_SELF"
+    assert del_res.json()["error"]["message"] == "Kendinizi projeden çıkaramazsınız."
+
+def test_remove_project_member_not_found(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin NotMem", "notmem_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "notmem_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Bulunamayan Üye Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj_id = create_res.json()["id"]
+
+    del_res = client.delete(f"/api/v1/projects/{proj_id}/members/99999", headers=headers)
+    assert del_res.status_code == 404
+    assert del_res.json()["error"]["code"] == "MEMBER_NOT_FOUND"
+
 
 
 

@@ -1,9 +1,7 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, status, Response
 from sqlalchemy.orm import Session
-
-
 
 from app.database import get_db
 from app.models.user import User
@@ -16,18 +14,40 @@ from app.schemas.project import (
     ProjectUpdate,
     ProjectResponse,
     ProjectListResponse,
+    ProjectMemberAddRequest,
+    ProjectMemberResponse,
     UserSummary
 )
 from app.core.exceptions import (
     InvalidDateRangeException,
     ProjectNotFoundException,
-    ProjectAccessDeniedException
+    ProjectAccessDeniedException,
+    UserNotFoundException,
+    AlreadyMemberException,
+    MemberNotFoundException,
+    CannotRemoveSelfException
 )
 from app.api.deps import get_current_user, require_admin
 
 router = APIRouter(prefix="/projects", tags=["Projeler"])
 
+def build_member_response(member: ProjectMember) -> ProjectMemberResponse:
+    """Helper to convert ProjectMember to ProjectMemberResponse."""
+    return ProjectMemberResponse(
+        user=UserSummary(
+            id=member.user.id,
+            full_name=member.user.full_name,
+            avatar_url=member.user.avatar_url
+        ),
+        email=member.user.email,
+        system_role=member.user.role,
+        technical_role=member.technical_role,
+        capacity_points=member.capacity_points,
+        joined_at=member.joined_at
+    )
+
 def build_project_response(project: Project, db: Session) -> ProjectResponse:
+
     """Helper to compute progress_percent and member_count for ProjectResponse."""
     # Active parent tasks progress percent (FR-061)
     active_tasks = db.query(Task).filter(
@@ -245,6 +265,130 @@ def delete_project(
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get(
+    "/{project_id}/members",
+    response_model=List[ProjectMemberResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Proje Üyelerini Listele (US-010 / US-029 / 5.6)"
+)
+def list_project_members(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Belirtilen projenin üyelerini listeler (FR-014).
+    Yalnızca projenin üyesi olan kullanıcılar erişebilir (FR-013).
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException("Proje bulunamadı.")
+
+    is_member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not is_member:
+        raise ProjectAccessDeniedException("Bu projeye erişim yetkiniz yok.")
+
+    members = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id)
+        .order_by(ProjectMember.joined_at.asc())
+        .all()
+    )
+    return [build_member_response(m) for m in members]
+
+@router.post(
+    "/{project_id}/members",
+    response_model=ProjectMemberResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Projeye Üye Ekle (US-010 / 5.7)"
+)
+def add_project_member(
+    project_id: int,
+    member_in: ProjectMemberAddRequest,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    E-posta adresi ile projeye yeni ekip üyesi ekler (FR-021).
+    Yalnızca YONETICI rolüne sahip kullanıcılar ekleyebilir.
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException("Proje bulunamadı.")
+
+    target_user = db.query(User).filter(User.email == member_in.email).first()
+    if not target_user:
+        raise UserNotFoundException("Bu e-posta ile kayıtlı kullanıcı bulunamadı.")
+
+    already_member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == target_user.id)
+        .first()
+    )
+    if already_member:
+        raise AlreadyMemberException("Bu kullanıcı zaten projenin üyesi.")
+
+    now = datetime.now(timezone.utc)
+    new_member = ProjectMember(
+        project_id=project_id,
+        user_id=target_user.id,
+        technical_role=member_in.technical_role,
+        capacity_points=None,
+        joined_at=now
+    )
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+
+    return build_member_response(new_member)
+
+@router.delete(
+    "/{project_id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Üyeyi Projeden Çıkar (US-010 / 5.10)"
+)
+def remove_project_member(
+    project_id: int,
+    user_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Belirtilen üyeyi projeden çıkarır (FR-022).
+    Yöneticinin kendisini çıkarması engellenmiştir (400 CANNOT_REMOVE_SELF).
+    Çıkarılan üyeye atanmış görevlerin sorumlusu boşaltılır (assignee = null).
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException("Proje bulunamadı.")
+
+    if current_user.id == user_id:
+        raise CannotRemoveSelfException("Kendinizi projeden çıkaramazsınız.")
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id)
+        .first()
+    )
+    if not member:
+        raise MemberNotFoundException("Bu kullanıcı projenin üyesi değil.")
+
+    # Çıkarılan üyeye atanmış görevlerin assignee_id alanını null yap (FR-022)
+    db.query(Task).filter(
+        Task.project_id == project_id,
+        Task.assignee_id == user_id
+    ).update({Task.assignee_id: None}, synchronize_session=False)
+
+    db.delete(member)
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 
 
