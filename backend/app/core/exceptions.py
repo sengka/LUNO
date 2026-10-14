@@ -63,3 +63,35 @@ class UserNotFoundException(CustomAPIException):
             message="Kullanıcı bulunamadı."
         )
 
+class ProjectNotFoundException(CustomAPIException):
+    def __init__(self, message: str = "Proje bulunamadı."):
+        super().__init__(
+            status_code=404,
+            code="PROJECT_NOT_FOUND",
+            message=message
+        )
+
+class ProjectAccessDeniedException(CustomAPIException):
+    def __init__(self, message: str = "Bu projeye erişim yetkiniz yok."):
+        super().__init__(
+            status_code=403,
+            code="PROJECT_ACCESS_DENIED",
+            message=message
+        )
+
+class AlreadyMemberException(CustomAPIException):
+    def __init__(self, message: str = "Bu kullanıcı zaten projenin üyesi."):
+        super().__init__(
+            status_code=409,
+            code="ALREADY_MEMBER",
+            message=message
+        )
+
+class InviteInvalidException(CustomAPIException):
+    def __init__(self, message: str = "Davet bağlantısı geçersiz veya süresi dolmuş."):
+        super().__init__(
+            status_code=400,
+            code="INVITE_INVALID",
+            message=message
+        )
+
