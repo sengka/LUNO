@@ -79,3 +79,19 @@ class ProjectAccessDeniedException(CustomAPIException):
             message=message
         )
 
+class AlreadyMemberException(CustomAPIException):
+    def __init__(self, message: str = "Bu kullanıcı zaten projenin üyesi."):
+        super().__init__(
+            status_code=409,
+            code="ALREADY_MEMBER",
+            message=message
+        )
+
+class InviteInvalidException(CustomAPIException):
+    def __init__(self, message: str = "Davet bağlantısı geçersiz veya süresi dolmuş."):
+        super().__init__(
+            status_code=400,
+            code="INVITE_INVALID",
+            message=message
+        )
+

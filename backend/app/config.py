@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 86400  # 24 hours (NFR-003)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./luno.db")
     CORS_ORIGINS: str = "http://localhost:5173"
+    # Davet bağlantısı bu adresle üretilir: <FRONTEND_URL>/davet/<token> (sözleşme 5.8)
+    FRONTEND_URL: str = "http://localhost:5173"
+    INVITE_EXPIRE_DAYS: int = 7
 
     @property
     def cors_origins_list(self) -> list[str]:
