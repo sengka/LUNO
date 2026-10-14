@@ -63,3 +63,19 @@ class UserNotFoundException(CustomAPIException):
             message="Kullanıcı bulunamadı."
         )
 
+class ProjectNotFoundException(CustomAPIException):
+    def __init__(self, message: str = "Proje bulunamadı."):
+        super().__init__(
+            status_code=404,
+            code="PROJECT_NOT_FOUND",
+            message=message
+        )
+
+class ProjectAccessDeniedException(CustomAPIException):
+    def __init__(self, message: str = "Bu projeye erişim yetkiniz yok."):
+        super().__init__(
+            status_code=403,
+            code="PROJECT_ACCESS_DENIED",
+            message=message
+        )
+
