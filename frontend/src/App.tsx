@@ -4,6 +4,7 @@ import { AuthPage } from '@/features/auth/AuthPage'
 import { AdminRoute, GuestRoute, ProtectedRoute } from '@/features/auth/RouteGuards'
 import { UsersPage } from '@/features/users/UsersPage'
 import { HomePage } from '@/pages/HomePage'
+import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 
 export default function App() {
   return (
@@ -16,6 +17,10 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />
+           <Route
+            path="/projeler/:projectId"
+            element={<ProjectDetailPage />}
+          />
           <Route element={<AdminRoute />}>
             <Route path="/kullanicilar" element={<UsersPage />} />
           </Route>
