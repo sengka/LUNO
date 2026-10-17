@@ -107,6 +107,8 @@ pip install -r requirements.txt
 
 # 3. Ortam değişkenleri (bir kez)
 cp .env.example .env               # PowerShell: Copy-Item .env.example .env
+# .env içindeki SECRET_KEY zorunludur, boşsa uygulama başlamaz. Anahtar üretmek için:
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 # 4. Veritabanı tabloları
 alembic upgrade head

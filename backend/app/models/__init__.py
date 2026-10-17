@@ -2,6 +2,7 @@
 
 from app.models.enums import Priority, TaskStatus
 from app.models.project import Project
+from app.models.project_invite import ProjectInvite
 from app.models.project_member import ProjectMember
 from app.models.task import Task
 from app.models.user import RevokedToken, SystemRole, User
@@ -9,6 +10,7 @@ from app.models.user import RevokedToken, SystemRole, User
 __all__ = [
     "Priority",
     "Project",
+    "ProjectInvite",
     "ProjectMember",
     "RevokedToken",
     "SystemRole",

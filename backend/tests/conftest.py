@@ -1,3 +1,8 @@
+import os
+
+# Testler için sabit anahtar. Settings içe aktarılırken okunduğu için app'ten önce ayarlanmalı.
+os.environ["SECRET_KEY"] = "test-secret-key-yalnizca-testler-icin"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
