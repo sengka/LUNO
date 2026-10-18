@@ -7,18 +7,29 @@ Kullanım (backend/ klasöründen, önce `alembic upgrade head`):
 
 Tüm kullanıcıların şifresi: Luno1234
 Yönetici hesapları: sena@ornek.com, aybuke@ornek.com
+
+Sprint 3 demo senaryosu için (README > "Sprint 3 demo senaryosu"):
+    - can@ornek.com hiçbir projenin üyesi değildir (e-posta ile üye ekleme örneği).
+    - Esra "Kurumsal Web Sitesi" projesinin üyesi değildir (erişim kısıtı ve davet örneği).
+    - Davet bağlantıları: <FRONTEND_URL>/davet/demo-web-davet (geçerli, Kurumsal Web Sitesi)
+      ve <FRONTEND_URL>/davet/demo-suresi-dolmus (süresi dolmuş, Mobil Uygulama).
+
+Yalnızca yerel geliştirme ve demo veritabanı içindir; şifre ve davet anahtarları herkesçe
+bilinir. Gerçek kullanıcıların olduğu bir veritabanında çalıştırmayın.
 """
 
 import argparse
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
+from app.config import settings
 from app.core.security import get_password_hash
 from app.database import Base, SessionLocal
 from app.models import (
     Priority,
     Project,
+    ProjectInvite,
     ProjectMember,
     SystemRole,
     Task,
@@ -43,6 +54,13 @@ USERS = [
     ("Salih Bilgin", "salih@ornek.com", SystemRole.EKIP_UYESI, "DevOps", None),
 ]
 
+# Hiçbir projenin üyesi olmayan kullanıcı: e-posta ile üye ekleme (sözleşme 5.7) örneği.
+NEW_USER = ("Can Demir", "can@ornek.com")
+
+# Sabit davet anahtarları: README'deki demo adımları bunları kullanır (sözleşme 5.8 / 5.9).
+ACTIVE_INVITE_TOKEN = "demo-web-davet"
+EXPIRED_INVITE_TOKEN = "demo-suresi-dolmus"
+
 LOAD_PROJECT_NAME = "Yük Testi Projesi"
 LOAD_MEMBER_COUNT = 20
 LOAD_TASK_COUNT = 200
@@ -53,10 +71,23 @@ def today():
 
 
 def reset(db) -> None:
-    """Tüm tabloları boşaltır (SQLite ve PostgreSQL'de çalışır)."""
-    for table in reversed(Base.metadata.sorted_tables):
-        db.execute(table.delete())
+    """Tüm tabloları boşaltır (SQLite ve PostgreSQL'de çalışır).
+
+    Kimlik numaraları da sıfırlanır; böylece --reset sonrası projelerin ve kullanıcıların
+    id'leri her ortamda aynıdır (Mobil Uygulama = 1, Kurumsal Web Sitesi = 2).
+    """
+    tables = list(reversed(Base.metadata.sorted_tables))
+    if db.get_bind().dialect.name == "postgresql":
+        names = ", ".join(t.name for t in tables)
+        db.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
+    else:
+        for table in tables:
+            db.execute(table.delete())
     db.commit()
+
+
+def invite_url(token: str) -> str:
+    return f"{settings.FRONTEND_URL.rstrip('/')}/davet/{token}"
 
 
 def seed(db) -> None:
@@ -81,6 +112,15 @@ def seed(db) -> None:
         )
         db.add(user)
         users[email.split("@")[0]] = user
+    db.add(
+        User(
+            full_name=NEW_USER[0],
+            email=NEW_USER[1],
+            hashed_password=hashed_password,
+            role=SystemRole.EKIP_UYESI.value,
+            theme="LIGHT",
+        )
+    )
     db.flush()
 
     # 1. proje: tüm ekip üye, görevlerin her durumu temsil ediliyor.
@@ -112,6 +152,27 @@ def seed(db) -> None:
         )
     for key in ("aybuke", "gizem", "mehmet"):
         db.add(ProjectMember(project=web, user=users[key]))
+
+    # Davet bağlantısı örnekleri (US-010, sözleşme 5.8 / 5.9).
+    now = datetime.now(timezone.utc)
+    db.add_all(
+        [
+            ProjectInvite(
+                token=ACTIVE_INVITE_TOKEN,
+                project=web,
+                created_by_id=users["aybuke"].id,
+                expires_at=now + timedelta(days=settings.INVITE_EXPIRE_DAYS),
+                created_at=now,
+            ),
+            ProjectInvite(
+                token=EXPIRED_INVITE_TOKEN,
+                project=mobil,
+                created_by_id=users["sena"].id,
+                expires_at=now - timedelta(days=1),
+                created_at=now - timedelta(days=settings.INVITE_EXPIRE_DAYS + 1),
+            ),
+        ]
+    )
 
     def task(
         project,
@@ -181,9 +242,13 @@ def seed(db) -> None:
 
     db.commit()
     task_count = db.scalar(select(func.count()).select_from(Task))
+    user_count = db.scalar(select(func.count()).select_from(User))
     print(
-        f"Seed tamamlandı: {len(users)} kullanıcı, 2 proje, {task_count} görev. Şifre: {SEED_PASSWORD}"
+        f"Seed tamamlandı: {user_count} kullanıcı, 2 proje, {task_count} görev. "
+        f"Şifre: {SEED_PASSWORD}"
     )
+    print(f"Davet bağlantısı (geçerli, Kurumsal Web Sitesi): {invite_url(ACTIVE_INVITE_TOKEN)}")
+    print(f"Davet bağlantısı (süresi dolmuş, Mobil Uygulama): {invite_url(EXPIRED_INVITE_TOKEN)}")
 
 
 def seed_load_test(db) -> None:

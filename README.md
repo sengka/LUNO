@@ -113,7 +113,7 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 # 4. Veritabanı tabloları
 alembic upgrade head
 
-# 5. (İsteğe bağlı) Örnek veri: 10 kullanıcı, 2 proje, 19 görev · şifre: Luno1234
+# 5. (İsteğe bağlı) Örnek veri: 11 kullanıcı, 2 proje, 19 görev, 2 davet · şifre: Luno1234
 python -m app.seed
 
 # 6. Uygulamayı başlat
@@ -135,7 +135,48 @@ Uygulama `http://localhost:8000`, API dokümantasyonu `http://localhost:8000/doc
   ```
 - `alembic upgrade head` "table already exists" hatası verirse veritabanınız Alembic'ten önce oluşturulmuştur. SQLite kullanıyorsanız `backend/luno.db` dosyasını silip komutu tekrar çalıştırın.
 
-**Örnek veri seçenekleri:** `python -m app.seed --reset` tabloları boşaltıp yeniden yükler; `python -m app.seed --buyuk` ayrıca 200 görev ve 20 üyeli bir yük testi projesi ekler.
+**Örnek veri seçenekleri:** `python -m app.seed --reset` tabloları boşaltıp yeniden yükler (id'ler de sıfırlanır); `python -m app.seed --buyuk` ayrıca 200 görev ve 20 üyeli bir yük testi projesi ekler. Örnek veri yalnızca yerel geliştirme ve demo içindir: şifre ve davet anahtarları herkesçe bilinir, gerçek kullanıcıların olduğu bir veritabanında çalıştırmayın.
+
+**Örnek veride kimler var?**
+
+| Kullanıcı | Rol | Mobil Uygulama (id 1) | Kurumsal Web Sitesi (id 2) |
+|---|---|---|---|
+| `sena@ornek.com` (id 1) | Yönetici | üye | — |
+| `aybuke@ornek.com` (id 2) | Yönetici | üye | üye |
+| `esra@ornek.com` (id 3) | Ekip Üyesi | üye | — |
+| `gizem@`, `mehmet@` | Ekip Üyesi | üye | üye |
+| `emre@`, `esma@`, `havva@`, `hakan@`, `salih@` | Ekip Üyesi | üye | — |
+| `can@ornek.com` (id 11) | Ekip Üyesi | — | — |
+
+Davet bağlantıları: `http://localhost:5173/davet/demo-web-davet` (geçerli, Kurumsal Web Sitesi) ve `http://localhost:5173/davet/demo-suresi-dolmus` (süresi dolmuş, Mobil Uygulama). Tüm şifreler `Luno1234`.
+
+### Sprint 3 demo senaryosu
+
+Sprint hedefi: Yönetici proje oluşturup düzenleyebilsin, üye ekleyebilsin; yetkisiz işlemler engellensin (US-005 – US-010).
+
+**Hazırlık:**
+
+1. `python -m app.seed --reset` ile örnek veriyi yükleyin ve `uvicorn app.main:app --reload` ile backend'i başlatın.
+2. `http://localhost:8000/docs` adresini açın. Her kullanıcı için `POST /api/v1/auth/login` ile giriş yapın, yanıttaki `access_token` değerini sağ üstteki **Authorize** düğmesine yapıştırın. Kullanıcı değiştirirken önce **Logout**, sonra yeni token ile **Authorize**.
+
+Aynı adımlar arayüzde de denenebilir (`http://localhost:5173`); aşağıdaki tablo API karşılıklarını ve beklenen sonuçları gösterir.
+
+| # | Kim | İstek | Beklenen sonuç | Gereksinim |
+|---|---|---|---|---|
+| 1 | Esra (Ekip Üyesi) | `POST /api/v1/projects` | `403 FORBIDDEN`, ekip üyesi proje oluşturamaz | US-005, FR-012 |
+| 2 | Sena | `POST /api/v1/projects` → `{"name": "Sprint 3 Demo", "start_date": "2026-10-20", "end_date": "2026-12-01"}` | `201`, yeni proje (id 3); Sena otomatik olarak üye olur | US-006, FR-015 |
+| 3 | Sena | Aynı istek, bitiş tarihi başlangıçtan önce | `400 INVALID_DATE_RANGE` | FR-016 |
+| 4 | Sena, Esra, Can | `GET /api/v1/projects` | Herkes yalnızca üyesi olduğu projeleri görür: Sena → Mobil Uygulama, Sprint 3 Demo · Esra → Mobil Uygulama · Can → boş liste | US-007, FR-017 |
+| 5 | Esra | `GET /api/v1/projects/2` | `403 PROJECT_ACCESS_DENIED`, üyesi olmadığı projeyi göremez | US-005, FR-013 |
+| 6 | Sena | `PATCH /api/v1/projects/3` → `{"name": "Sprint 3 Demo (güncel)"}` | `200`, proje adı güncellenir | US-008, FR-018 |
+| 7 | Sena | `POST /api/v1/projects/3/members` → `{"email": "can@ornek.com"}` | `201`, Can üye olur. Aynı istek tekrar: `409 ALREADY_MEMBER` · kayıtlı olmayan e-posta: `404 USER_NOT_FOUND` | US-010, FR-021 |
+| 8 | Aybüke | `POST /api/v1/projects/2/invites` | `201`, 7 gün geçerli yeni bir `invite_url` | US-010, FR-021 |
+| 9 | Esra | `POST /api/v1/invites/demo-web-davet/accept` | `200`, Esra Kurumsal Web Sitesi'ne katılır ve artık projeler listesinde görür. Tekrar: `409 ALREADY_MEMBER` | US-010, FR-021 |
+| 10 | Can | `POST /api/v1/invites/demo-suresi-dolmus/accept` | `400 INVITE_INVALID`, süresi dolmuş bağlantı | US-010, FR-021 |
+| 11 | Aybüke | `DELETE /api/v1/projects/2/members/3` | `204`, Esra projeden çıkarılır, projeye tekrar erişemez. Kendini çıkarmayı denerse (`.../members/2`): `400 CANNOT_REMOVE_SELF` | US-010, FR-022 |
+| 12 | Sena | `DELETE /api/v1/projects/3` | `204`, proje görevleri, üyelikleri ve davetleriyle birlikte silinir; `GET` ile `404 PROJECT_NOT_FOUND` | US-009, FR-020 |
+
+Senaryoyu baştan oynatmak için `python -m app.seed --reset` yeterlidir.
 
 **Testler:**
 

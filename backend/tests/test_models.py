@@ -1,14 +1,30 @@
-"""Veritabanı modelleri ve seed verisi testleri (#80)."""
+"""Veritabanı modelleri, seed verisi (#80, #120) ve SQLite foreign key (#119) testleri."""
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import IntegrityError, StatementError
 
 from app.core.security import get_password_hash
-from app.models import Priority, Project, ProjectMember, Task, TaskStatus, User
-from app.seed import LOAD_TASK_COUNT, SEED_PASSWORD, seed, seed_load_test
+from app.models import (
+    Priority,
+    Project,
+    ProjectInvite,
+    ProjectMember,
+    Task,
+    TaskStatus,
+    User,
+)
+from app.seed import (
+    ACTIVE_INVITE_TOKEN,
+    EXPIRED_INVITE_TOKEN,
+    LOAD_TASK_COUNT,
+    SEED_PASSWORD,
+    reset,
+    seed,
+    seed_load_test,
+)
 
 
 def make_user(db, email="ayse@ornek.com", role="EKIP_UYESI"):
@@ -150,7 +166,8 @@ def test_deleting_task_deletes_subtasks(db_session):
 def test_seed_creates_data_and_is_idempotent(db_session):
     seed(db_session)
     seed(db_session)  # ikinci çalıştırma veri eklememeli
-    assert count(db_session, User) == 10
+    assert count(db_session, User) == 11
+    assert count(db_session, ProjectInvite) == 2
     assert count(db_session, Project) == 2
     assert count(db_session, Task) == 19
     statuses = set(db_session.scalars(select(Task.status)).all())
@@ -174,3 +191,133 @@ def test_load_test_seed(db_session):
     project = db_session.scalar(select(Project).where(Project.name == "Yük Testi Projesi"))
     assert count(db_session, Task, Task.project_id == project.id) == LOAD_TASK_COUNT
     assert count(db_session, ProjectMember, ProjectMember.project_id == project.id) == 20
+
+
+# --- SQLite foreign key kuralları (#119) -------------------------------------
+# Aşağıdaki testler ORM cascade'e değil, veritabanının kendi kurallarına
+# (ON DELETE CASCADE / SET NULL) dayanır; PRAGMA foreign_keys kapalıysa başarısız olur.
+
+
+def test_sqlite_foreign_keys_enabled(db_session):
+    assert db_session.execute(text("PRAGMA foreign_keys")).scalar() == 1
+
+
+def test_app_engine_enables_sqlite_foreign_keys(tmp_path):
+    """Uygulamanın kendi engine ayarı (database.py) da kuralları açar."""
+    from sqlalchemy import create_engine
+
+    from app.database import enable_sqlite_foreign_keys
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'fk.db'}")
+    enable_sqlite_foreign_keys(engine)
+    with engine.connect() as conn:
+        assert conn.execute(text("PRAGMA foreign_keys")).scalar() == 1
+    engine.dispose()
+
+
+def test_deleting_user_sets_task_assignee_to_null(db_session):
+    """Kullanıcı silinince görevleri atamasız kalır, üyelikleri silinir (sözleşme 5.10)."""
+    owner = make_user(db_session, email="yonetici@ornek.com", role="YONETICI")
+    member = make_user(db_session)
+    project = make_project(db_session, owner)
+    db_session.add(ProjectMember(project=project, user=member))
+    db_session.add(Task(project=project, title="Görev", assignee=member, created_by=member))
+    db_session.commit()
+
+    db_session.delete(member)
+    db_session.commit()
+    db_session.expire_all()
+
+    task = db_session.scalar(select(Task))
+    assert task is not None  # görev silinmez
+    assert task.assignee_id is None
+    assert task.created_by_id is None
+    assert count(db_session, ProjectMember) == 0
+
+
+def test_bulk_project_delete_cascades_in_database(db_session):
+    """ORM'i atlayan toplu silmede de görevler, üyelikler ve davetler silinir (FR-020)."""
+    user = make_user(db_session)
+    project = make_project(db_session, user)
+    parent = Task(project=project, title="Ana görev")
+    db_session.add_all(
+        [
+            ProjectMember(project=project, user=user),
+            parent,
+            Task(project=project, title="Alt görev", parent=parent),
+            ProjectInvite(
+                token="abc123",
+                project=project,
+                created_by_id=user.id,
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            ),
+        ]
+    )
+    db_session.commit()
+
+    db_session.execute(delete(Project))
+    db_session.commit()
+
+    assert count(db_session, Task) == 0
+    assert count(db_session, ProjectMember) == 0
+    assert count(db_session, ProjectInvite) == 0
+
+
+def test_task_with_missing_project_rejected(db_session):
+    db_session.add(Task(project_id=999, title="Sahipsiz görev"))
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+
+
+# --- Sprint 3 demo verisi (#120) ----------------------------------------------
+
+
+def login(client, email):
+    response = client.post("/api/v1/auth/login", json={"email": email, "password": SEED_PASSWORD})
+    assert response.status_code == 200
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_seed_demo_users_and_ids(db_session):
+    """README'deki demo adımları bu id'lere ve üyelik durumlarına dayanır."""
+    seed(db_session)
+    mobil = db_session.scalar(select(Project).where(Project.name == "Mobil Uygulama"))
+    web = db_session.scalar(select(Project).where(Project.name == "Kurumsal Web Sitesi"))
+    assert (mobil.id, web.id) == (1, 2)
+
+    esra = db_session.scalar(select(User).where(User.email == "esra@ornek.com"))
+    can = db_session.scalar(select(User).where(User.email == "can@ornek.com"))
+    assert esra.id == 3
+    assert esra.id not in {m.user_id for m in web.members}  # erişim kısıtı ve davet örneği
+    assert count(db_session, ProjectMember, ProjectMember.user_id == can.id) == 0
+
+
+def test_reset_keeps_ids_stable(db_session):
+    seed(db_session)
+    reset(db_session)
+    seed(db_session)
+    web = db_session.scalar(select(Project).where(Project.name == "Kurumsal Web Sitesi"))
+    assert web.id == 2
+
+
+def test_seed_active_invite_can_be_accepted(client, db_session):
+    """Sözleşme 5.9: geçerli davet kabul edilir, ikinci kez kabul 409 ALREADY_MEMBER."""
+    seed(db_session)
+    headers = login(client, "esra@ornek.com")
+
+    response = client.post(f"/api/v1/invites/{ACTIVE_INVITE_TOKEN}/accept", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["name"] == "Kurumsal Web Sitesi"
+
+    again = client.post(f"/api/v1/invites/{ACTIVE_INVITE_TOKEN}/accept", headers=headers)
+    assert again.status_code == 409
+    assert again.json()["error"]["code"] == "ALREADY_MEMBER"
+
+
+def test_seed_expired_invite_is_rejected(client, db_session):
+    """Sözleşme 5.9: süresi dolmuş davet 400 INVITE_INVALID."""
+    seed(db_session)
+    headers = login(client, "can@ornek.com")
+    response = client.post(f"/api/v1/invites/{EXPIRED_INVITE_TOKEN}/accept", headers=headers)
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVITE_INVALID"
