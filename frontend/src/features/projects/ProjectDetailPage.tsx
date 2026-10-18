@@ -9,6 +9,8 @@ import { ApiError } from '@/lib/api'
 import { projectsApi } from './api'
 import { ProjectEditForm } from './ProjectEditForm'
 import { ProjectDeleteButton } from './ProjectDeleteButton'
+import { ProjectMembers } from './ProjectMembers'
+import { ProjectInvitePanel } from './ProjectInvitePanel'
 
 function formatDate(value: string | null) {
   if (!value) return 'Belirtilmedi'
@@ -204,6 +206,9 @@ function ProjectDetailContent() {
           </div>
         </dl>
       </section>
+
+      <ProjectMembers projectId={project.id} />
+            {isAdmin && <ProjectInvitePanel projectId={project.id} />}
     </div>
   )
 }

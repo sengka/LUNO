@@ -1,11 +1,16 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthPage } from '@/features/auth/AuthPage'
-import { AdminRoute, GuestRoute, ProtectedRoute } from '@/features/auth/RouteGuards'
+import {
+  AdminRoute,
+  GuestRoute,
+  ProtectedRoute,
+} from '@/features/auth/RouteGuards'
 import { UsersPage } from '@/features/users/UsersPage'
 import { HomePage } from '@/pages/HomePage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
+import { InviteAcceptPage } from '@/features/projects/InviteAcceptPage'
 
 export default function App() {
   return (
@@ -19,10 +24,12 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />
           <Route path="/projeler" element={<ProjectsPage />} />
-           <Route
+          <Route
             path="/projeler/:projectId"
             element={<ProjectDetailPage />}
           />
+          <Route path="/davet/:token" element={<InviteAcceptPage />} />
+
           <Route element={<AdminRoute />}>
             <Route path="/kullanicilar" element={<UsersPage />} />
           </Route>
