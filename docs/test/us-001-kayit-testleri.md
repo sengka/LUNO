@@ -52,7 +52,7 @@ yapıldı. Kontrol paneli açıldı; kullanıcı “Hakan Test” ve rolü
 
 - Boş ad kontrolü, kayıtlı olmayan hakan.qa003@example.com adresiyle
   tekrar denendi ve ad alanında beklenen hata gösterildi.
-- Ekran görüntüleri sohbet içinde incelendi; henüz depoya eklenmedi.
+- Test edenin paylaştığı 8 ekran görüntüsü aşağıdaki kanıtlar bölümüne eklendi.
 - Bu denemelerde hata raporu açılmasını gerektiren bir davranış gözlenmedi.
 
 - npm install çıktısında 7 yüksek önem dereceli güvenlik açığı
@@ -72,3 +72,27 @@ Test edenin paylaştığı terminal çıktısı: **75 passed, 4 warnings in 23.7
 Mevcut 75 otomatik testin tamamı geçti. Yeni otomatik test eklenmedi.
 Dört StarletteDeprecationWarning bildirildi: biri TestClient/httpx
 kullanımıyla, üçü HTTP 422 sabitinin eski adıyla ilgili.
+
+## Ekran görüntüsü kanıtları
+
+Görseller manuel test sırasında test eden tarafından alındı.
+TC-001 görseli kayıt sonrası giriş ekranını gösterir; başarı mesajı
+bu görselde görünmez ve test edenin beyanına dayanır.
+TC-007 görselinde başarı mesajı doğrudan görünür.
+
+| Test | Kanıt |
+| --- | --- |
+| TC-001 | [Kayıt sonrası giriş ekranı](kanitlar/us-001/tc-001-kayit-sonrasi.png) |
+| TC-002 | [Kayıtlı e-posta hatası](kanitlar/us-001/tc-002-kayitli-eposta.png) |
+| TC-003 | [Yeni e-posta ile boş ad kontrolü](kanitlar/us-001/tc-003-bos-ad.png) |
+| TC-004 | [Boş e-posta kontrolü](kanitlar/us-001/tc-004-bos-eposta.png) |
+| TC-005 | [Boş şifre kontrolü](kanitlar/us-001/tc-005-bos-sifre.png) |
+| TC-006 | [7 karakterli şifre kontrolü](kanitlar/us-001/tc-006-kisa-sifre.png) |
+| TC-007 | [8 karakterli şifre ve başarı mesajı](kanitlar/us-001/tc-007-sekiz-karakter.png) |
+| Ek doğrulama | [Yeni hesapla giriş ve Ekip Üyesi rolü](kanitlar/us-001/ek-dogrulama-giris.png) |
+
+## Hata raporu durumu
+
+Bu kayıt senaryolarında hata gözlenmediği için Hata Raporu şablonuyla
+issue açılması uygulanamaz (N/A). Bu değerlendirme yalnızca yukarıdaki
+senaryoları kapsar; npm güvenlik bulgularının incelemesi ayrı takip işidir.
