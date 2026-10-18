@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { SettingsIcon } from 'lucide-react'
+import { AccessDenied } from '@/components/AccessDenied'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
@@ -58,6 +59,18 @@ function ProjectDetailContent() {
   if (projectQuery.isError) {
     const error = projectQuery.error
     const status = error instanceof ApiError ? error.status : null
+
+    // US-005: Üyesi olunmayan proje (403 PROJECT_ACCESS_DENIED)
+    if (status === 403) {
+      return (
+        <AccessDenied
+          title="Bu projeye erişimin yok"
+          description="Bu projenin üyesi değilsin. Projeye eklenmek için proje yöneticine başvurabilirsin."
+          backTo="/projeler"
+          backLabel="Projelerime dön"
+        />
+      )
+    }
 
     const message =
       status === 403
