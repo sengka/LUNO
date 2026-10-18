@@ -21,3 +21,10 @@ export interface UpdateProjectInput {
   start_date?: string | null
   end_date?: string | null
 }
+
+export interface CreateProjectInput {
+  name: string
+  description: string | null
+  start_date: string
+  end_date: string
+}
