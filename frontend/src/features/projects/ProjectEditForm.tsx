@@ -115,11 +115,11 @@ export function ProjectEditForm({ project, onClose }: Props) {
     }
 
     if (values.start_date !== (project.start_date ?? '')) {
-      changes.start_date = values.start_date || null
+      changes.start_date = values.start_date
     }
 
     if (values.end_date !== (project.end_date ?? '')) {
-      changes.end_date = values.end_date || null
+      changes.end_date = values.end_date
     }
 
     if (Object.keys(changes).length === 0) {
@@ -214,7 +214,9 @@ export function ProjectEditForm({ project, onClose }: Props) {
                   ? 'project-start-error'
                   : undefined
               }
-              {...form.register('start_date')}
+              {...form.register('start_date', {
+                required: 'Başlangıç tarihi zorunludur.',
+              })}
             />
           </FormField>
 
@@ -232,7 +234,9 @@ export function ProjectEditForm({ project, onClose }: Props) {
                   ? 'project-end-error'
                   : undefined
               }
-              {...form.register('end_date')}
+              {...form.register('end_date', {
+                required: 'Bitiş tarihi zorunludur.',
+              })}
             />
           </FormField>
         </div>
