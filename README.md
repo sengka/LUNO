@@ -73,21 +73,67 @@ LUNO'yu benzerlerinden ayıran taraf, geleceğe dair uyarı vermesidir: her gör
 
 ### Docker Compose ile çalıştırma
 
-Gereksinim: Docker Desktop ve Docker Compose v2.
+Gereksinimler: Windows/macOS/Linux üzerinde çalışan Docker Desktop veya Docker Engine ve Docker Compose v2. Windows'ta Docker Desktop'ın **Linux containers** motoru çalışır durumda olmalıdır. Bu yöntemle uygulamayı çalıştırmak için bilgisayarda ayrıca Python veya Node.js kurmanız gerekmez.
 
-Proje kök klasöründe terminal açıp şu komutları çalıştırın:
+Komutları, `docker-compose.yml` dosyasının bulunduğu **proje kök klasöründe** çalıştırın. Önce klasörün doğru olduğunu kontrol edebilirsiniz:
 
 ```bash
+ls
+```
+
+Listede `docker-compose.yml` ve `.env.example` görünmelidir. Ardından örnek ayar dosyasını kopyalayın. Aynı klasörde önceden oluşturulmuş `.env` dosyanız varsa bu adımı atlayın; komut mevcut dosyayı ezebilir.
+
+```bash
+# Git Bash / macOS / Linux
 cp .env.example .env
 ```
 
-`.env` dosyasını açıp `SECRET_KEY` değerini uzun, rastgele bir değerle değiştirin. Ardından:
+PowerShell kullanıyorsanız kopyalama komutu:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Proje kökündeki `.env` dosyasını açın. `SECRET_KEY=` satırındaki örnek değeri kendi rastgele anahtarınızla değiştirin. Anahtar üretmek için Python kuruluysa şu komutu çalıştırıp çıkan değeri kullanabilirsiniz:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+`.env` dosyasının adı tam olarak `.env` olmalı; `.env.txt` olmamalıdır. Bu dosya kişisel ayarlar ve sırlar içerdiği için GitHub'a gönderilmez. Sonra proje kök klasöründe uygulamayı oluşturup başlatın:
 
 ```bash
 docker compose up --build
 ```
 
-İlk açılışta veritabanı hazır olunca backend Alembic migration'larını çalıştırır. Arayüz `http://localhost:5173`, backend dokümantasyonu `http://localhost:8000/docs` adresindedir. Durdurmak için terminalde `Ctrl+C` tuşlarına basıp `docker compose down` çalıştırın.
+İlk çalıştırmada Docker gerekli imajları indirip servisleri oluşturur; bu işlem birkaç dakika sürebilir. Veritabanı hazır olunca backend Alembic migration'larını otomatik çalıştırır. Terminalde `Uvicorn running on http://0.0.0.0:8000` benzeri bir satır gördüğünüzde servisler başlamıştır:
+
+- Arayüz: <http://localhost:5173>
+- Backend API dokümantasyonu: <http://localhost:8000/docs>
+
+İlk kez giriş yapıp örnek kullanıcılarla denemek isterseniz ikinci bir terminal açıp proje kökünde şu komutu çalıştırın. Örnek verideki şifre `Luno1234`'tür; örnek veriyi gerçek kullanıcı verisi bulunan bir veritabanına eklemeyin.
+
+```bash
+docker compose exec backend python -m app.seed
+```
+
+Uygulamayı durdurmak için ilk terminalde `Ctrl+C`, sonra proje kökünde:
+
+```bash
+docker compose down
+```
+
+`docker compose down` veritabanı verilerini saklar. Veritabanı verilerini de silmek için `docker compose down -v` kullanılabilir; bu komut **PostgreSQL verilerini kalıcı olarak siler**.
+
+#### Sık karşılaşılan sorunlar
+
+| Belirti | Çözüm |
+| --- | --- |
+| `no configuration file provided: not found` | Terminal proje kök klasöründe değildir. `docker-compose.yml` dosyasının bulunduğu klasöre geçip komutu tekrar çalıştırın. |
+| `SECRET_KEY is missing` veya `required variable SECRET_KEY` | Proje kökünde `.env` dosyası olduğundan emin olun; yoksa `.env.example` dosyasını kopyalayın. `SECRET_KEY=` satırındaki değer boş veya örnek değer olarak kalmış olmamalıdır. Dosya adının `.env.txt` olmadığını kontrol edin. |
+| `failed to connect to the docker API`, `dockerDesktopLinuxEngine` veya `daemon is not running` | Docker Desktop'ı açın ve motorun başlamasını bekleyin. Windows'ta Docker Desktop'ın WSL 2 / Linux containers ortamının çalışır durumda olduğunu kontrol edin. |
+| `port is already allocated` veya `address already in use` | `5173`, `8000` ya da `5432` portlarından biri başka bir uygulama tarafından kullanılıyordur. O uygulamayı kapatın veya `docker-compose.yml` içindeki sol taraftaki port numarasını değiştirin. |
+| Sayfa açılmıyor veya servis hata veriyor | `docker compose ps` ile servis durumuna, `docker compose logs --tail=100 backend` ve `docker compose logs --tail=100 frontend` ile son kayıtlara bakın. Veritabanı için `docker compose logs --tail=100 db` kullanın. |
 
 ### Backend
 
