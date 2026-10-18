@@ -2,8 +2,8 @@ export interface Project {
   id: number
   name: string
   description: string | null
-  start_date: string | null
-  end_date: string | null
+  start_date: string
+  end_date: string
   progress_percent: number
   member_count: number
   created_by: {
@@ -18,6 +18,6 @@ export interface Project {
 export interface UpdateProjectInput {
   name?: string
   description?: string | null
-  start_date?: string | null
-  end_date?: string | null
+  start_date?: string
+  end_date?: string
 }
