@@ -8,6 +8,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { ApiError } from '@/lib/api'
 import { projectsApi } from './api'
 import { ProjectEditForm } from './ProjectEditForm'
+import { ProjectDeleteButton } from './ProjectDeleteButton'
 
 function formatDate(value: string | null) {
   if (!value) return 'Belirtilmedi'
@@ -105,15 +106,19 @@ function ProjectDetailContent() {
           </div>
 
           {isAdmin && (
-            <Button
-              variant="outline"
-              onClick={() => setEditing((current) => !current)}
-              aria-expanded={editing}
-              aria-controls="project-edit-panel"
-            >
-              <SettingsIcon className="size-4" />
-              {editing ? 'Düzenlemeyi kapat' : 'Projeyi düzenle'}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditing((current) => !current)}
+                aria-expanded={editing}
+                aria-controls="project-edit-panel"
+              >
+                <SettingsIcon className="size-4" />
+                {editing ? 'Düzenlemeyi kapat' : 'Projeyi düzenle'}
+              </Button>
+
+              <ProjectDeleteButton project={project} />
+            </div>
           )}
         </div>
 

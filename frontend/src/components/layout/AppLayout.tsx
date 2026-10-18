@@ -55,6 +55,9 @@ export function AppLayout() {
             <NavLink to="/" end className={navLinkClass}>
               Ana sayfa
             </NavLink>
+            <NavLink to="/projeler" className={navLinkClass}>
+              Projelerim
+            </NavLink>
             {/* US-004: Ekip üyesi bu sayfayı menüde görmez */}
             {isAdmin && (
               <NavLink to="/kullanicilar" className={navLinkClass}>

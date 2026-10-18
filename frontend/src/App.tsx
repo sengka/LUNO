@@ -5,6 +5,7 @@ import { AdminRoute, GuestRoute, ProtectedRoute } from '@/features/auth/RouteGua
 import { UsersPage } from '@/features/users/UsersPage'
 import { HomePage } from '@/pages/HomePage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
+import { ProjectsPage } from '@/features/projects/ProjectsPage'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />
+          <Route path="/projeler" element={<ProjectsPage />} />
            <Route
             path="/projeler/:projectId"
             element={<ProjectDetailPage />}
