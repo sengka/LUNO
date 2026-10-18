@@ -22,6 +22,7 @@ export function ProjectDeleteButton({ project }: Props) {
 
   const deletion = useMutation({
     mutationFn: () => projectsApi.remove(project.id),
+    meta: { skipForbiddenToast: true },
 
     onSuccess: () => {
       dialogRef.current?.close()

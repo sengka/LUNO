@@ -48,6 +48,7 @@ export function ProjectEditForm({ project, onClose }: Props) {
   const update = useMutation({
     mutationFn: (values: UpdateProjectInput) =>
       projectsApi.update(project.id, values),
+    meta: { skipForbiddenToast: true },
 
     onSuccess: (updatedProject) => {
       queryClient.setQueryData(
