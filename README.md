@@ -147,7 +147,37 @@ Testler bellek içi ayrı bir SQLite veritabanı kullanır, geliştirme veritaba
 
 ### Frontend
 
-Frontend kurulum adımları, frontend iskeleti `develop`'a eklendiğinde yazılacaktır.
+Gereksinim: **Node.js 22.22 veya üzeri** (react-router 8 bu sürümü istiyor). Sürümünü `node -v` ile kontrol edebilirsin. Komutlar `frontend/` klasöründe çalıştırılır.
+
+```bash
+cd frontend
+
+# 1. Paketler (bir kez ve package.json değiştiğinde)
+npm install
+
+# 2. Geliştirme sunucusu
+npm run dev
+```
+
+Arayüz `http://localhost:5173` adresinde açılır. Giriş yapabilmek için backend'in de çalışıyor olması gerekir (yukarıdaki Backend bölümü). Örnek veri yüklediysen `sena@ornek.com` (yönetici) veya `mehmet@ornek.com` (ekip üyesi) ile `Luno1234` şifresiyle giriş yapabilirsin.
+
+**Backend adresi:** Varsayılan `http://localhost:8000/api/v1`. Farklı bir adres için `.env.example` dosyasını `.env.local` olarak kopyalayıp `VITE_API_URL` değerini değiştir.
+
+**Diğer komutlar:**
+
+| Komut | Ne yapar |
+| --- | --- |
+| `npm run build` | TypeScript kontrolü yapıp yayın sürümünü `dist/` klasörüne üretir |
+| `npm run lint` | Kod kalitesi kontrolü (oxlint) |
+| `npm run preview` | Üretilen yayın sürümünü yerelde açar |
+
+**Klasör yapısı:**
+
+- `src/features/` · Özelliğe göre ekranlar ve API çağrıları (`auth`, `users`, `projects`)
+- `src/components/ui/` · shadcn/ui bileşenleri. Yeni bileşen: `npx shadcn@latest add <ad>`
+- `src/components/` · Ortak bileşenler (düzen, form alanları, logo)
+- `src/lib/api.ts` · Backend istemcisi: token ekleme, ortak hata formatı, 401'de oturumu kapatma
+- `src/types/api.ts` · API sözleşmesindeki veri tipleri
 
 ## Ekip
 
