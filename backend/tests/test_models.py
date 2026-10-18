@@ -1,13 +1,21 @@
-"""Veritabanı modelleri ve seed verisi testleri (#80)."""
+"""Veritabanı modelleri, seed verisi (#80) ve SQLite foreign key (#119) testleri."""
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import IntegrityError, StatementError
 
 from app.core.security import get_password_hash
-from app.models import Priority, Project, ProjectMember, Task, TaskStatus, User
+from app.models import (
+    Priority,
+    Project,
+    ProjectInvite,
+    ProjectMember,
+    Task,
+    TaskStatus,
+    User,
+)
 from app.seed import LOAD_TASK_COUNT, SEED_PASSWORD, seed, seed_load_test
 
 
@@ -174,3 +182,79 @@ def test_load_test_seed(db_session):
     project = db_session.scalar(select(Project).where(Project.name == "Yük Testi Projesi"))
     assert count(db_session, Task, Task.project_id == project.id) == LOAD_TASK_COUNT
     assert count(db_session, ProjectMember, ProjectMember.project_id == project.id) == 20
+
+
+# --- SQLite foreign key kuralları (#119) -------------------------------------
+# Aşağıdaki testler ORM cascade'e değil, veritabanının kendi kurallarına
+# (ON DELETE CASCADE / SET NULL) dayanır; PRAGMA foreign_keys kapalıysa başarısız olur.
+
+
+def test_sqlite_foreign_keys_enabled(db_session):
+    assert db_session.execute(text("PRAGMA foreign_keys")).scalar() == 1
+
+
+def test_app_engine_enables_sqlite_foreign_keys(tmp_path):
+    """Uygulamanın kendi engine ayarı (database.py) da kuralları açar."""
+    from sqlalchemy import create_engine
+
+    from app.database import enable_sqlite_foreign_keys
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'fk.db'}")
+    enable_sqlite_foreign_keys(engine)
+    with engine.connect() as conn:
+        assert conn.execute(text("PRAGMA foreign_keys")).scalar() == 1
+    engine.dispose()
+
+
+def test_deleting_user_sets_task_assignee_to_null(db_session):
+    """Kullanıcı silinince görevleri atamasız kalır, üyelikleri silinir (sözleşme 5.10)."""
+    owner = make_user(db_session, email="yonetici@ornek.com", role="YONETICI")
+    member = make_user(db_session)
+    project = make_project(db_session, owner)
+    db_session.add(ProjectMember(project=project, user=member))
+    db_session.add(Task(project=project, title="Görev", assignee=member, created_by=member))
+    db_session.commit()
+
+    db_session.delete(member)
+    db_session.commit()
+    db_session.expire_all()
+
+    task = db_session.scalar(select(Task))
+    assert task is not None  # görev silinmez
+    assert task.assignee_id is None
+    assert task.created_by_id is None
+    assert count(db_session, ProjectMember) == 0
+
+
+def test_bulk_project_delete_cascades_in_database(db_session):
+    """ORM'i atlayan toplu silmede de görevler, üyelikler ve davetler silinir (FR-020)."""
+    user = make_user(db_session)
+    project = make_project(db_session, user)
+    parent = Task(project=project, title="Ana görev")
+    db_session.add_all(
+        [
+            ProjectMember(project=project, user=user),
+            parent,
+            Task(project=project, title="Alt görev", parent=parent),
+            ProjectInvite(
+                token="abc123",
+                project=project,
+                created_by_id=user.id,
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            ),
+        ]
+    )
+    db_session.commit()
+
+    db_session.execute(delete(Project))
+    db_session.commit()
+
+    assert count(db_session, Task) == 0
+    assert count(db_session, ProjectMember) == 0
+    assert count(db_session, ProjectInvite) == 0
+
+
+def test_task_with_missing_project_rejected(db_session):
+    db_session.add(Task(project_id=999, title="Sahipsiz görev"))
+    with pytest.raises(IntegrityError):
+        db_session.commit()

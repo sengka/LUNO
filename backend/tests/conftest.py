@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.database import Base, get_db
+from app.database import Base, enable_sqlite_foreign_keys, get_db
 
 # Use in-memory SQLite database for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -20,6 +20,8 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+# Geliştirme ortamıyla aynı davranış: CASCADE ve SET NULL kuralları testlerde de uygulanır (#119).
+enable_sqlite_foreign_keys(engine)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope="function")
