@@ -76,9 +76,30 @@ başarısız oldu; nihai oturum testleri mevcut korumalı /auth/me üzerinden y�
 
 ## Kapsam sınırları
 
-- Süresi dolmuş token API seviyesinde doğrulandı; tarayıcıdaki süresi dolmuş
-  token bildirimi bu çalışmada ayrıca çalıştırılmadı.
+- Süresi dolmuş token hem API seviyesinde hem tarayıcıda sayfa yenileme akışında doğrulandı.
 - Yönetici hesabıyla ayrı giriş senaryosu çalıştırılmadı; FR-005'in Ekip Üyesi
   akışı doğrulandı. Bu rapor tüm rol izinlerinin denetlendiği anlamına gelmez.
 - npm güvenlik bulguları ve proje listeleme yan bulgusu ayrı değerlendirilmelidir.
 - PR onayı ve birleştirme ekip sorumlularını bekler.
+
+## LG-007 — Tarayıcıda süresi dolmuş oturum (ek doğrulama)
+
+19.10.2026 tarihinde localhost:5173 üzerinde yürütüldü.
+
+1. Yerel backend oturum süresi yalnızca test için 5 saniyeye indirildi.
+   /auth/login yanıtındaki expires_in=5 ile ayar doğrulandı.
+2. Önceki test oturumundan çıkılıp hakan.qa002@example.com ile giriş yapıldı.
+   Kontrol paneli ve kullanıcı adı görüldü.
+3. Token süresinden uzun beklendi ve sayfa yenilendi; böylece /auth/me isteği tetiklendi.
+4. Tarayıcı /giris adresine yönlendirildi ve “Oturumunun süresi doldu,
+   lütfen tekrar giriş yap.” bildirimi gösterildi.
+5. / adresine yeniden gidildiğinde yine /giris açıldı; korumalı içerik görünmedi.
+6. Backend oturum süresi eski değerine döndürüldü ve yeni giriş yanıtında
+   expires_in=86400 doğrulandı. .env veya uygulama kaynaklarında kalıcı değişiklik yapılmadı.
+
+Sonuç: **Geçti.** Oturumun kullanılamaz hale gelmesi, uyarı ve yönlendirme
+tarayıcıdan doğrulandı. Tarayıcı depolamasındaki token değeri doğrudan okunmadı.
+Bu kontrol sayfa yenilenince yapılan doğrulamayı kapsar; boşta açık kalan
+sayfada tam süre dolduğu anda otomatik çıkış yapıldığı iddiasını içermez.
+
+[LG-007 kanıtı: Süresi dolmuş oturum uyarısı](kanitlar/us-002/suresi-dolmus-oturum.png)
