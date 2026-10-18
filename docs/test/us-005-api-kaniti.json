@@ -1,0 +1,97 @@
+{
+  "source_commit": "9fad8ab",
+  "backend": "http://localhost:8000",
+  "actor_role": "EKIP_UYESI",
+  "existing_private_project_id": 1,
+  "actor_membership": false,
+  "data_unchanged": true,
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/users",
+      "status": 403,
+      "body": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "Bu işlem için yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "PATCH",
+      "path": "/users/4/role",
+      "status": 403,
+      "body": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "Bu işlem için yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/projects/1/invites",
+      "status": 403,
+      "body": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "Bu işlem için yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/projects",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/projects/1",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/projects/1/members",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/projects/1/members/4",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "PATCH",
+      "path": "/tasks/1/assignee",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    }
+  ]
+}
