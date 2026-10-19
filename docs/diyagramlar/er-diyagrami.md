@@ -1,6 +1,6 @@
-# LUNO · ER Diyagramı (Sprint 2)
+# LUNO · ER Diyagramı (Sprint 3)
 
-Sprint 2–4'te kullanılacak temel tablolar: `users`, `revoked_tokens`, `projects`, `project_members`, `tasks`.
+Şu an veritabanında bulunan tablolar: `users`, `revoked_tokens`, `projects`, `project_members`, `project_invites`, `tasks`.
 Kaynak: API Sözleşmesi v1.1, bölüm 2 (Veri nesneleri). Model kodu: `backend/app/models/`.
 
 ![ER diyagramı](er-diyagrami.png)
@@ -15,6 +15,7 @@ Düzenlenebilir kaynak: [`er-diyagrami.drawio`](er-diyagrami.drawio) (draw.io / 
 | `revoked_tokens` | `app/models/user.py` (Esra, US-003) | Çıkış yapılmış JWT'ler |
 | `projects` | `app/models/project.py` | Projeler |
 | `project_members` | `app/models/project_member.py` | Proje üyelikleri, teknik rol ve kapasite |
+| `project_invites` | `app/models/project_invite.py` (Esra, US-010) | Projeye davet bağlantıları (migration `0002`) |
 | `tasks` | `app/models/task.py` | Görevler ve alt görevler |
 
 ## Kurallar
@@ -25,12 +26,13 @@ Düzenlenebilir kaynak: [`er-diyagrami.drawio`](er-diyagrami.drawio) (draw.io / 
 | Yeni kullanıcı `EKIP_UYESI` | `users.role` varsayılan değer | FR-010 |
 | Şifreler düz metin değil, bcrypt hash olarak saklanır | `users.hashed_password` | NFR-001 |
 | Bir kişi bir projeye bir kez üye olur | `project_members` birleşik PK | — |
+| Davet bağlantısı benzersiz ve 7 gün geçerli | `project_invites.token` unique index, `expires_at` | FR-021, sözleşme 5.8 |
 | Proje bitişi başlangıçtan önce olamaz | `projects` check kısıtı | FR-016 |
 | Teslim tarihi başlangıçtan önce olamaz | `tasks` check kısıtı | FR-025 |
 | Görev durumu ve önceliği yalnızca tanımlı değerler | `tasks` check kısıtları | Sözleşme 1.3 |
 | Efor puanı 1, 2, 3, 5, 8, 13 | `tasks` check kısıtı | FR-036 |
 | Kapasite boşsa sınır yok, doluysa > 0 | `project_members` check kısıtı | FR-074, FR-075 |
-| Proje silinince görevleri ve üyelikleri silinir | `ON DELETE CASCADE` + ORM cascade | FR-020 |
+| Proje silinince görevleri, üyelikleri ve davetleri silinir | `ON DELETE CASCADE` + ORM cascade | FR-020 |
 | Ana görev silinince alt görevleri silinir | `tasks.parent_id ON DELETE CASCADE` + ORM cascade | Sözleşme 6.7 |
 | Atanan kişi silinince görev atamasız kalır | `tasks.assignee_id ON DELETE SET NULL` | Sözleşme 5.10 |
 | Şema değişiklikleri yalnızca Alembic migration ile yapılır | `backend/alembic/versions/` | NFR-018 |
@@ -49,12 +51,13 @@ Durum ve öncelik, `users.role` ile aynı şekilde metin (`varchar`) olarak sakl
 - Alt görevin alt görevi olamaz (6.10, `NESTED_SUBTASK_NOT_ALLOWED`).
 - Atanan kişi projenin üyesi olmalı (6.2, `ASSIGNEE_NOT_MEMBER`).
 - Üye projeden çıkarılınca o projedeki görevlerinin `assignee_id`'si `null` yapılır (5.10).
+- Alt görevin `project_id`'si ana görevinkiyle aynı olmalı (veritabanı bunu engellemez).
+- Daveti kabul ederken süresi dolmuş bağlantı reddedilir (`expires_at`, 5.9 `INVITE_INVALID`); zaten üye olan kullanıcı `ALREADY_MEMBER` alır.
 
 ## Sonraki sprintlerde eklenecek tablolar
 
 | Tablo | Sprint | Not |
 |---|---|---|
-| `project_invites` | 3 | Davet bağlantıları (FR-021) |
 | `labels`, `task_labels` | 4 | Etiketler (FR-037) |
 | `files`, `comments` | 5 | Dosya ve yorumlar (FR-046 – FR-050) |
 | `notifications` | 6 | Bildirimler (FR-051) |

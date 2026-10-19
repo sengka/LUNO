@@ -4,14 +4,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.database import get_db
-from app.models.user import User, SystemRole
+from app.models.user import User
 from app.schemas.user import UserResponse, UserRoleUpdateRequest, UserListResponse
 from app.core.exceptions import (
-    ForbiddenException,
     CannotChangeOwnRoleException,
     UserNotFoundException
 )
-from app.api.deps import get_current_user
+from app.api.deps import require_admin
 
 router = APIRouter(prefix="/users", tags=["Kullanıcı Yönetimi"])
 
@@ -25,16 +24,13 @@ def get_users(
     search: Optional[str] = Query(None, description="Ad ve e-postada arama (case-insensitive)"),
     page: int = Query(1, ge=1, description="Sayfa numarası (varsayılan: 1)"),
     limit: int = Query(10, ge=1, le=100, description="Sayfa başına öge sayısı (varsayılan: 10)"),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
     Sisteme kayıtlı tüm kullanıcıları listeler ve ad/e-posta bazında arama yapar.
     Sadece YONETICI rolüne sahip kullanıcılar erişebilir.
     """
-    if current_user.role != SystemRole.YONETICI.value:
-        raise ForbiddenException("Bu işlem için yetkiniz yok.")
-
     query = db.query(User)
 
     if search and search.strip():
@@ -66,7 +62,7 @@ def get_users(
 def update_user_role(
     user_id: int,
     role_in: UserRoleUpdateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -74,9 +70,6 @@ def update_user_role(
     Sadece YONETICI rolüne sahip kullanıcılar erişebilir.
     Yöneticinin kendi rolünü değiştirmesi engellenmiştir (400 CANNOT_CHANGE_OWN_ROLE).
     """
-    if current_user.role != SystemRole.YONETICI.value:
-        raise ForbiddenException("Bu işlem için yetkiniz yok.")
-
     if current_user.id == user_id:
         raise CannotChangeOwnRoleException()
 

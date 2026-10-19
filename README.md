@@ -71,6 +71,70 @@ LUNO'yu benzerlerinden ayıran taraf, geleceğe dair uyarı vermesidir: her gör
 
 ## Kurulum
 
+### Docker Compose ile çalıştırma
+
+Gereksinimler: Windows/macOS/Linux üzerinde çalışan Docker Desktop veya Docker Engine ve Docker Compose v2. Windows'ta Docker Desktop'ın **Linux containers** motoru çalışır durumda olmalıdır. Bu yöntemle uygulamayı çalıştırmak için bilgisayarda ayrıca Python veya Node.js kurmanız gerekmez.
+
+Komutları, `docker-compose.yml` dosyasının bulunduğu **proje kök klasöründe** çalıştırın. Önce klasörün doğru olduğunu kontrol edebilirsiniz:
+
+```bash
+ls
+```
+
+Listede `docker-compose.yml` ve `.env.example` görünmelidir. Ardından örnek ayar dosyasını kopyalayın. Aynı klasörde önceden oluşturulmuş `.env` dosyanız varsa bu adımı atlayın; komut mevcut dosyayı ezebilir.
+
+```bash
+# Git Bash / macOS / Linux
+cp .env.example .env
+```
+
+PowerShell kullanıyorsanız kopyalama komutu:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Proje kökündeki `.env` dosyasını açın. `SECRET_KEY=` satırındaki örnek değeri kendi rastgele anahtarınızla değiştirin. Anahtar üretmek için Python kuruluysa şu komutu çalıştırıp çıkan değeri kullanabilirsiniz:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+`.env` dosyasının adı tam olarak `.env` olmalı; `.env.txt` olmamalıdır. Bu dosya kişisel ayarlar ve sırlar içerdiği için GitHub'a gönderilmez. Sonra proje kök klasöründe uygulamayı oluşturup başlatın:
+
+```bash
+docker compose up --build
+```
+
+İlk çalıştırmada Docker gerekli imajları indirip servisleri oluşturur; bu işlem birkaç dakika sürebilir. Veritabanı hazır olunca backend Alembic migration'larını otomatik çalıştırır. Terminalde `Uvicorn running on http://0.0.0.0:8000` benzeri bir satır gördüğünüzde servisler başlamıştır:
+
+- Arayüz: <http://localhost:5173>
+- Backend API dokümantasyonu: <http://localhost:8000/docs>
+
+İlk kez giriş yapıp örnek kullanıcılarla denemek isterseniz ikinci bir terminal açıp proje kökünde şu komutu çalıştırın. Örnek verideki şifre `Luno1234`'tür; örnek veriyi gerçek kullanıcı verisi bulunan bir veritabanına eklemeyin.
+
+```bash
+docker compose exec backend python -m app.seed
+```
+
+Uygulamayı durdurmak için ilk terminalde `Ctrl+C`, sonra proje kökünde:
+
+```bash
+docker compose down
+```
+
+`docker compose down` veritabanı verilerini saklar. Veritabanı verilerini de silmek için `docker compose down -v` kullanılabilir; bu komut **PostgreSQL verilerini kalıcı olarak siler**.
+
+#### Sık karşılaşılan sorunlar
+
+| Belirti | Çözüm |
+| --- | --- |
+| `no configuration file provided: not found` | Terminal proje kök klasöründe değildir. `docker-compose.yml` dosyasının bulunduğu klasöre geçip komutu tekrar çalıştırın. |
+| `SECRET_KEY is missing` veya `required variable SECRET_KEY` | Proje kökünde `.env` dosyası olduğundan emin olun; yoksa `.env.example` dosyasını kopyalayın. `SECRET_KEY=` satırındaki değer boş veya örnek değer olarak kalmış olmamalıdır. Dosya adının `.env.txt` olmadığını kontrol edin. |
+| `failed to connect to the docker API`, `dockerDesktopLinuxEngine` veya `daemon is not running` | Docker Desktop'ı açın ve motorun başlamasını bekleyin. Windows'ta Docker Desktop'ın WSL 2 / Linux containers ortamının çalışır durumda olduğunu kontrol edin. |
+| `port is already allocated` veya `address already in use` | `5173`, `8000` ya da `5432` portlarından biri başka bir uygulama tarafından kullanılıyordur. O uygulamayı kapatın veya `docker-compose.yml` içindeki sol taraftaki port numarasını değiştirin. |
+| Sayfa açılmıyor veya servis hata veriyor | `docker compose ps` ile servis durumuna, `docker compose logs --tail=100 backend` ve `docker compose logs --tail=100 frontend` ile son kayıtlara bakın. Veritabanı için `docker compose logs --tail=100 db` kullanın. |
+
 ### Backend
 
 Gereksinim: Python 3.11 veya üzeri. Komutlar `backend/` klasöründe çalıştırılır.
@@ -89,11 +153,13 @@ pip install -r requirements.txt
 
 # 3. Ortam değişkenleri (bir kez)
 cp .env.example .env               # PowerShell: Copy-Item .env.example .env
+# .env içindeki SECRET_KEY zorunludur, boşsa uygulama başlamaz. Anahtar üretmek için:
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 # 4. Veritabanı tabloları
 alembic upgrade head
 
-# 5. (İsteğe bağlı) Örnek veri: 10 kullanıcı, 2 proje, 19 görev · şifre: Luno1234
+# 5. (İsteğe bağlı) Örnek veri: 11 kullanıcı, 2 proje, 19 görev, 2 davet · şifre: Luno1234
 python -m app.seed
 
 # 6. Uygulamayı başlat
@@ -115,7 +181,48 @@ Uygulama `http://localhost:8000`, API dokümantasyonu `http://localhost:8000/doc
   ```
 - `alembic upgrade head` "table already exists" hatası verirse veritabanınız Alembic'ten önce oluşturulmuştur. SQLite kullanıyorsanız `backend/luno.db` dosyasını silip komutu tekrar çalıştırın.
 
-**Örnek veri seçenekleri:** `python -m app.seed --reset` tabloları boşaltıp yeniden yükler; `python -m app.seed --buyuk` ayrıca 200 görev ve 20 üyeli bir yük testi projesi ekler.
+**Örnek veri seçenekleri:** `python -m app.seed --reset` tabloları boşaltıp yeniden yükler (id'ler de sıfırlanır); `python -m app.seed --buyuk` ayrıca 200 görev ve 20 üyeli bir yük testi projesi ekler. Örnek veri yalnızca yerel geliştirme ve demo içindir: şifre ve davet anahtarları herkesçe bilinir, gerçek kullanıcıların olduğu bir veritabanında çalıştırmayın.
+
+**Örnek veride kimler var?**
+
+| Kullanıcı | Rol | Mobil Uygulama (id 1) | Kurumsal Web Sitesi (id 2) |
+|---|---|---|---|
+| `sena@ornek.com` (id 1) | Yönetici | üye | — |
+| `aybuke@ornek.com` (id 2) | Yönetici | üye | üye |
+| `esra@ornek.com` (id 3) | Ekip Üyesi | üye | — |
+| `gizem@`, `mehmet@` | Ekip Üyesi | üye | üye |
+| `emre@`, `esma@`, `havva@`, `hakan@`, `salih@` | Ekip Üyesi | üye | — |
+| `can@ornek.com` (id 11) | Ekip Üyesi | — | — |
+
+Davet bağlantıları: `http://localhost:5173/davet/demo-web-davet` (geçerli, Kurumsal Web Sitesi) ve `http://localhost:5173/davet/demo-suresi-dolmus` (süresi dolmuş, Mobil Uygulama). Tüm şifreler `Luno1234`.
+
+### Sprint 3 demo senaryosu
+
+Sprint hedefi: Yönetici proje oluşturup düzenleyebilsin, üye ekleyebilsin; yetkisiz işlemler engellensin (US-005 – US-010).
+
+**Hazırlık:**
+
+1. `python -m app.seed --reset` ile örnek veriyi yükleyin ve `uvicorn app.main:app --reload` ile backend'i başlatın.
+2. `http://localhost:8000/docs` adresini açın. Her kullanıcı için `POST /api/v1/auth/login` ile giriş yapın, yanıttaki `access_token` değerini sağ üstteki **Authorize** düğmesine yapıştırın. Kullanıcı değiştirirken önce **Logout**, sonra yeni token ile **Authorize**.
+
+Aynı adımlar arayüzde de denenebilir (`http://localhost:5173`); aşağıdaki tablo API karşılıklarını ve beklenen sonuçları gösterir.
+
+| # | Kim | İstek | Beklenen sonuç | Gereksinim |
+|---|---|---|---|---|
+| 1 | Esra (Ekip Üyesi) | `POST /api/v1/projects` | `403 FORBIDDEN`, ekip üyesi proje oluşturamaz | US-005, FR-012 |
+| 2 | Sena | `POST /api/v1/projects` → `{"name": "Sprint 3 Demo", "start_date": "2026-10-20", "end_date": "2026-12-01"}` | `201`, yeni proje (id 3); Sena otomatik olarak üye olur | US-006, FR-015 |
+| 3 | Sena | Aynı istek, bitiş tarihi başlangıçtan önce | `400 INVALID_DATE_RANGE` | FR-016 |
+| 4 | Sena, Esra, Can | `GET /api/v1/projects` | Herkes yalnızca üyesi olduğu projeleri görür: Sena → Mobil Uygulama, Sprint 3 Demo · Esra → Mobil Uygulama · Can → boş liste | US-007, FR-017 |
+| 5 | Esra | `GET /api/v1/projects/2` | `403 PROJECT_ACCESS_DENIED`, üyesi olmadığı projeyi göremez | US-005, FR-013 |
+| 6 | Sena | `PATCH /api/v1/projects/3` → `{"name": "Sprint 3 Demo (güncel)"}` | `200`, proje adı güncellenir | US-008, FR-018 |
+| 7 | Sena | `POST /api/v1/projects/3/members` → `{"email": "can@ornek.com"}` | `201`, Can üye olur. Aynı istek tekrar: `409 ALREADY_MEMBER` · kayıtlı olmayan e-posta: `404 USER_NOT_FOUND` | US-010, FR-021 |
+| 8 | Aybüke | `POST /api/v1/projects/2/invites` | `201`, 7 gün geçerli yeni bir `invite_url` | US-010, FR-021 |
+| 9 | Esra | `POST /api/v1/invites/demo-web-davet/accept` | `200`, Esra Kurumsal Web Sitesi'ne katılır ve artık projeler listesinde görür. Tekrar: `409 ALREADY_MEMBER` | US-010, FR-021 |
+| 10 | Can | `POST /api/v1/invites/demo-suresi-dolmus/accept` | `400 INVITE_INVALID`, süresi dolmuş bağlantı | US-010, FR-021 |
+| 11 | Aybüke | `DELETE /api/v1/projects/2/members/3` | `204`, Esra projeden çıkarılır, projeye tekrar erişemez. Kendini çıkarmayı denerse (`.../members/2`): `400 CANNOT_REMOVE_SELF` | US-010, FR-022 |
+| 12 | Sena | `DELETE /api/v1/projects/3` | `204`, proje görevleri, üyelikleri ve davetleriyle birlikte silinir; `GET` ile `404 PROJECT_NOT_FOUND` | US-009, FR-020 |
+
+Senaryoyu baştan oynatmak için `python -m app.seed --reset` yeterlidir.
 
 **Testler:**
 
@@ -127,7 +234,37 @@ Testler bellek içi ayrı bir SQLite veritabanı kullanır, geliştirme veritaba
 
 ### Frontend
 
-Frontend kurulum adımları, frontend iskeleti `develop`'a eklendiğinde yazılacaktır.
+Gereksinim: **Node.js 22.22 veya üzeri** (react-router 8 bu sürümü istiyor). Sürümünü `node -v` ile kontrol edebilirsin. Komutlar `frontend/` klasöründe çalıştırılır.
+
+```bash
+cd frontend
+
+# 1. Paketler (bir kez ve package.json değiştiğinde)
+npm install
+
+# 2. Geliştirme sunucusu
+npm run dev
+```
+
+Arayüz `http://localhost:5173` adresinde açılır. Giriş yapabilmek için backend'in de çalışıyor olması gerekir (yukarıdaki Backend bölümü). Örnek veri yüklediysen `sena@ornek.com` (yönetici) veya `mehmet@ornek.com` (ekip üyesi) ile `Luno1234` şifresiyle giriş yapabilirsin.
+
+**Backend adresi:** Varsayılan `http://localhost:8000/api/v1`. Farklı bir adres için `.env.example` dosyasını `.env.local` olarak kopyalayıp `VITE_API_URL` değerini değiştir.
+
+**Diğer komutlar:**
+
+| Komut | Ne yapar |
+| --- | --- |
+| `npm run build` | TypeScript kontrolü yapıp yayın sürümünü `dist/` klasörüne üretir |
+| `npm run lint` | Kod kalitesi kontrolü (oxlint) |
+| `npm run preview` | Üretilen yayın sürümünü yerelde açar |
+
+**Klasör yapısı:**
+
+- `src/features/` · Özelliğe göre ekranlar ve API çağrıları (`auth`, `users`, `projects`)
+- `src/components/ui/` · shadcn/ui bileşenleri. Yeni bileşen: `npx shadcn@latest add <ad>`
+- `src/components/` · Ortak bileşenler (düzen, form alanları, logo)
+- `src/lib/api.ts` · Backend istemcisi: token ekleme, ortak hata formatı, 401'de oturumu kapatma
+- `src/types/api.ts` · API sözleşmesindeki veri tipleri
 
 ## Ekip
 

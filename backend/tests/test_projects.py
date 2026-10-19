@@ -608,5 +608,103 @@ def test_remove_project_member_not_found(client: TestClient, db_session: Session
     assert del_res.json()["error"]["code"] == "MEMBER_NOT_FOUND"
 
 
+def test_admin_cannot_update_or_delete_project_if_not_member(client: TestClient, db_session: Session):
+    admin1 = create_user(client, "Admin Sahip", "owner_admin@luno.com")
+    promote_to_admin(db_session, admin1["id"])
+    token1 = get_auth_token(client, "owner_admin@luno.com")
+    headers1 = {"Authorization": f"Bearer {token1}"}
 
+    create_res = client.post("/api/v1/projects", json={
+        "name": "Yonetici 1 Projesi",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers1)
+    proj_id = create_res.json()["id"]
+
+    # Admin 2: system role YONETICI but not a member of proj_id
+    admin2 = create_user(client, "Admin Yabanci", "foreign_admin@luno.com")
+    promote_to_admin(db_session, admin2["id"])
+    token2 = get_auth_token(client, "foreign_admin@luno.com")
+    headers2 = {"Authorization": f"Bearer {token2}"}
+
+    # GET detail should be 403 PROJECT_ACCESS_DENIED
+    get_res = client.get(f"/api/v1/projects/{proj_id}", headers=headers2)
+    assert get_res.status_code == 403
+    assert get_res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+    # PATCH should be 403 PROJECT_ACCESS_DENIED
+    patch_res = client.patch(f"/api/v1/projects/{proj_id}", json={"name": "Hack"}, headers=headers2)
+    assert patch_res.status_code == 403
+    assert patch_res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+    # DELETE should be 403 PROJECT_ACCESS_DENIED
+    del_res = client.delete(f"/api/v1/projects/{proj_id}", headers=headers2)
+    assert del_res.status_code == 403
+    assert del_res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+    # POST members should be 403 PROJECT_ACCESS_DENIED
+    target_user = create_user(client, "Aday", "candidate@luno.com")
+    add_res = client.post(f"/api/v1/projects/{proj_id}/members", json={"email": "candidate@luno.com"}, headers=headers2)
+    assert add_res.status_code == 403
+    assert add_res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+    # DELETE members should be 403 PROJECT_ACCESS_DENIED
+    del_mem_res = client.delete(f"/api/v1/projects/{proj_id}/members/{admin1['id']}", headers=headers2)
+    assert del_mem_res.status_code == 403
+    assert del_mem_res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+
+def test_remove_member_does_not_affect_tasks_in_other_projects(client: TestClient, db_session: Session):
+    admin = create_user(client, "Admin Multi", "multi_admin@luno.com")
+    promote_to_admin(db_session, admin["id"])
+    token = get_auth_token(client, "multi_admin@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    proj1_res = client.post("/api/v1/projects", json={
+        "name": "Proje 1",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj1_id = proj1_res.json()["id"]
+
+    proj2_res = client.post("/api/v1/projects", json={
+        "name": "Proje 2",
+        "start_date": "2026-10-01",
+        "end_date": "2026-10-31"
+    }, headers=headers)
+    proj2_id = proj2_res.json()["id"]
+
+    member = create_user(client, "Ortak Uye", "shared_member@luno.com")
+    client.post(f"/api/v1/projects/{proj1_id}/members", json={"email": "shared_member@luno.com"}, headers=headers)
+    client.post(f"/api/v1/projects/{proj2_id}/members", json={"email": "shared_member@luno.com"}, headers=headers)
+
+    task1 = Task(project_id=proj1_id, title="Gorev 1", status=TaskStatus.TODO, assignee_id=member["id"])
+    task2 = Task(project_id=proj2_id, title="Gorev 2", status=TaskStatus.IN_PROGRESS, assignee_id=member["id"])
+    db_session.add_all([task1, task2])
+    db_session.commit()
+    db_session.refresh(task1)
+    db_session.refresh(task2)
+
+    assert task1.assignee_id == member["id"]
+    assert task2.assignee_id == member["id"]
+
+    # Remove member from proj1 only
+    del_res = client.delete(f"/api/v1/projects/{proj1_id}/members/{member['id']}", headers=headers)
+    assert del_res.status_code == 204
+
+    db_session.expire_all()
+    refreshed_task1 = db_session.query(Task).filter(Task.id == task1.id).first()
+    refreshed_task2 = db_session.query(Task).filter(Task.id == task2.id).first()
+
+    # Task1 in Proj 1 is unassigned
+    assert refreshed_task1.assignee_id is None
+    # Task2 in Proj 2 remains assigned to member
+    assert refreshed_task2.assignee_id == member["id"]
+
+    # Member is still in Proj 2
+    mem2 = db_session.query(ProjectMember).filter(
+        ProjectMember.project_id == proj2_id,
+        ProjectMember.user_id == member["id"]
+    ).first()
+    assert mem2 is not None
 

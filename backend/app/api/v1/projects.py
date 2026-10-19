@@ -27,7 +27,8 @@ from app.core.exceptions import (
     MemberNotFoundException,
     CannotRemoveSelfException
 )
-from app.api.deps import get_current_user, require_admin
+from app.api.deps import get_current_user, require_admin, get_project_member
+
 
 router = APIRouter(prefix="/projects", tags=["Projeler"])
 
@@ -47,7 +48,6 @@ def build_member_response(member: ProjectMember) -> ProjectMemberResponse:
     )
 
 def build_project_response(project: Project, db: Session) -> ProjectResponse:
-
     """Helper to compute progress_percent and member_count for ProjectResponse."""
     # Active parent tasks progress percent (FR-061)
     active_tasks = db.query(Task).filter(
@@ -179,26 +179,14 @@ def create_project(
 )
 def get_project_detail(
     project_id: int,
-    current_user: User = Depends(get_current_user),
+    membership: ProjectMember = Depends(get_project_member),
     db: Session = Depends(get_db)
 ):
     """
     Belirtilen projenin detayını getirir.
     Kullanıcı projenin üyesi olmalıdır (FR-013).
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise ProjectNotFoundException("Proje bulunamadı.")
-
-    is_member = (
-        db.query(ProjectMember)
-        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
-        .first()
-    )
-    if not is_member:
-        raise ProjectAccessDeniedException("Bu projeye erişim yetkiniz yok.")
-
-    return build_project_response(project, db)
+    return build_project_response(membership.project, db)
 
 @router.patch(
     "/{project_id}",
@@ -210,16 +198,15 @@ def update_project(
     project_id: int,
     project_in: ProjectUpdate,
     current_user: User = Depends(require_admin),
+    membership: ProjectMember = Depends(get_project_member),
     db: Session = Depends(get_db)
 ):
     """
     Mevcut bir projenin bilgilerini düzenler.
-    Yalnızca YONETICI rolüne sahip kullanıcılar düzenleyebilir (FR-018).
+    Yalnızca YONETICI rolüne sahip ve projenin üyesi olan kullanıcılar düzenleyebilir (FR-013, FR-018).
     Bitiş tarihi başlangıç tarihinden önce olamaz (400 INVALID_DATE_RANGE).
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise ProjectNotFoundException("Proje bulunamadı.")
+    project = membership.project
 
     new_start = project_in.start_date if project_in.start_date is not None else project.start_date
     new_end = project_in.end_date if project_in.end_date is not None else project.end_date
@@ -250,18 +237,15 @@ def update_project(
 def delete_project(
     project_id: int,
     current_user: User = Depends(require_admin),
+    membership: ProjectMember = Depends(get_project_member),
     db: Session = Depends(get_db)
 ):
     """
     Belirtilen projeyi siler.
-    Yalnızca YONETICI rolüne sahip kullanıcılar silebilir (FR-019).
+    Yalnızca YONETICI rolüne sahip ve projenin üyesi olan kullanıcılar silebilir (FR-013, FR-019).
     Projeye bağlı görevler ve üyelikler de birlikte silinir (FR-020).
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise ProjectNotFoundException("Proje bulunamadı.")
-
-    db.delete(project)
+    db.delete(membership.project)
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -274,25 +258,13 @@ def delete_project(
 )
 def list_project_members(
     project_id: int,
-    current_user: User = Depends(get_current_user),
+    _membership: ProjectMember = Depends(get_project_member),
     db: Session = Depends(get_db)
 ):
     """
     Belirtilen projenin üyelerini listeler (FR-014).
     Yalnızca projenin üyesi olan kullanıcılar erişebilir (FR-013).
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise ProjectNotFoundException("Proje bulunamadı.")
-
-    is_member = (
-        db.query(ProjectMember)
-        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
-        .first()
-    )
-    if not is_member:
-        raise ProjectAccessDeniedException("Bu projeye erişim yetkiniz yok.")
-
     members = (
         db.query(ProjectMember)
         .filter(ProjectMember.project_id == project_id)
@@ -311,16 +283,13 @@ def add_project_member(
     project_id: int,
     member_in: ProjectMemberAddRequest,
     current_user: User = Depends(require_admin),
+    _membership: ProjectMember = Depends(get_project_member),
     db: Session = Depends(get_db)
 ):
     """
     E-posta adresi ile projeye yeni ekip üyesi ekler (FR-021).
-    Yalnızca YONETICI rolüne sahip kullanıcılar ekleyebilir.
+    Yalnızca YONETICI rolüne sahip ve projenin üyesi olan kullanıcılar ekleyebilir.
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise ProjectNotFoundException("Proje bulunamadı.")
-
     target_user = db.query(User).filter(User.email == member_in.email).first()
     if not target_user:
         raise UserNotFoundException("Bu e-posta ile kayıtlı kullanıcı bulunamadı.")
@@ -356,17 +325,15 @@ def remove_project_member(
     project_id: int,
     user_id: int,
     current_user: User = Depends(require_admin),
+    _membership: ProjectMember = Depends(get_project_member),
     db: Session = Depends(get_db)
 ):
     """
     Belirtilen üyeyi projeden çıkarır (FR-022).
+    Yalnızca YONETICI rolüne sahip ve projenin üyesi olan kullanıcılar çıkarabilir.
     Yöneticinin kendisini çıkarması engellenmiştir (400 CANNOT_REMOVE_SELF).
     Çıkarılan üyeye atanmış görevlerin sorumlusu boşaltılır (assignee = null).
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise ProjectNotFoundException("Proje bulunamadı.")
-
     if current_user.id == user_id:
         raise CannotRemoveSelfException("Kendinizi projeden çıkaramazsınız.")
 
@@ -388,6 +355,7 @@ def remove_project_member(
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 
 
