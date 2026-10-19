@@ -1,0 +1,100 @@
+{
+  "source_commit": "9fad8ab",
+  "actor_id": 4,
+  "actor_role": "EKIP_UYESI",
+  "fixture": "Two disposable projects/invites created via SQL, not product API verification",
+  "project_ids": [
+    1,
+    2
+  ],
+  "initial_memberships": 0,
+  "ui_results": {
+    "invalid": "INVITE_INVALID; no membership",
+    "expired": "INVITE_INVALID; no membership",
+    "valid": "membership (1,4), project redirect and success toast; detail then 404",
+    "repeat": "ALREADY_MEMBER; one membership"
+  },
+  "responses": [
+    {
+      "method": "POST",
+      "path": "/invites/qa-us010-invalid-20261019/accept",
+      "status": 400,
+      "body": {
+        "error": {
+          "code": "INVITE_INVALID",
+          "message": "Davet bağlantısı geçersiz veya süresi dolmuş.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/invites/qa-us010-expired-20261019/accept",
+      "status": 400,
+      "body": {
+        "error": {
+          "code": "INVITE_INVALID",
+          "message": "Davet bağlantısı geçersiz veya süresi dolmuş.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/invites/qa-us010-valid-20261019/accept",
+      "status": 409,
+      "body": {
+        "error": {
+          "code": "ALREADY_MEMBER",
+          "message": "Zaten bu projenin üyesisiniz.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/members",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/projects/1/members",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/projects/1/members/4",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    }
+  ],
+  "membership_after_probes": [
+    [
+      1,
+      4
+    ]
+  ],
+  "cleanup": {
+    "projects_remaining": 0,
+    "qa_role": "EKIP_UYESI"
+  }
+}
