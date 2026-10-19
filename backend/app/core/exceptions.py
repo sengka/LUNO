@@ -56,11 +56,19 @@ class CannotChangeOwnRoleException(CustomAPIException):
         )
 
 class UserNotFoundException(CustomAPIException):
-    def __init__(self):
+    def __init__(self, message: str = "Kullanıcı bulunamadı."):
         super().__init__(
             status_code=404,
             code="USER_NOT_FOUND",
-            message="Kullanıcı bulunamadı."
+            message=message
+        )
+
+class InvalidDateRangeException(CustomAPIException):
+    def __init__(self, message: str = "Bitiş tarihi başlangıç tarihinden önce olamaz."):
+        super().__init__(
+            status_code=400,
+            code="INVALID_DATE_RANGE",
+            message=message
         )
 
 class ProjectNotFoundException(CustomAPIException):
@@ -84,6 +92,22 @@ class AlreadyMemberException(CustomAPIException):
         super().__init__(
             status_code=409,
             code="ALREADY_MEMBER",
+            message=message
+        )
+
+class MemberNotFoundException(CustomAPIException):
+    def __init__(self, message: str = "Bu kullanıcı projenin üyesi değil."):
+        super().__init__(
+            status_code=404,
+            code="MEMBER_NOT_FOUND",
+            message=message
+        )
+
+class CannotRemoveSelfException(CustomAPIException):
+    def __init__(self, message: str = "Kendinizi projeden çıkaramazsınız."):
+        super().__init__(
+            status_code=400,
+            code="CANNOT_REMOVE_SELF",
             message=message
         )
 

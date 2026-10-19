@@ -8,6 +8,15 @@ from app.schemas.user import (
     ErrorResponse,
     ErrorDetail
 )
+from app.schemas.project import (
+    UserSummary,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
+    ProjectListResponse,
+    ProjectMemberAddRequest,
+    ProjectMemberResponse
+)
 
 __all__ = [
     "UserRegisterRequest",
@@ -17,6 +26,14 @@ __all__ = [
     "UserListResponse",
     "TokenResponse",
     "ErrorResponse",
-    "ErrorDetail"
+    "ErrorDetail",
+    "UserSummary",
+    "ProjectCreate",
+    "ProjectUpdate",
+    "ProjectResponse",
+    "ProjectListResponse",
+    "ProjectMemberAddRequest",
+    "ProjectMemberResponse"
 ]
+
 
