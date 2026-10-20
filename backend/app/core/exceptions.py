@@ -119,3 +119,27 @@ class InviteInvalidException(CustomAPIException):
             message=message
         )
 
+class TaskNotFoundException(CustomAPIException):
+    def __init__(self, message: str = "Görev bulunamadı."):
+        super().__init__(
+            status_code=404,
+            code="TASK_NOT_FOUND",
+            message=message
+        )
+
+class TaskNotActiveException(CustomAPIException):
+    def __init__(self, message: str = "Onay bekleyen veya reddedilen görevin durumu değiştirilemez."):
+        super().__init__(
+            status_code=400,
+            code="TASK_NOT_ACTIVE",
+            message=message
+        )
+
+class NotTaskAssigneeException(CustomAPIException):
+    def __init__(self, message: str = "Size atanmamış bir görevin durumunu değiştiremezsiniz."):
+        super().__init__(
+            status_code=403,
+            code="NOT_TASK_ASSIGNEE",
+            message=message
+        )
+
