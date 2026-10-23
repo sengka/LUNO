@@ -6,6 +6,19 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
 }
 export const STORY_POINT_OPTIONS = [1, 2, 3, 5, 8, 13] as const
 export type StoryPoints = (typeof STORY_POINT_OPTIONS)[number]
+export interface Label {
+  id: number
+  name: string
+  color: string
+}
+export interface CreateLabelInput {
+  name: string
+  color: string
+}
+// 6.10: yalnızca zorunlu başlığı gönder; diğer alanlar ve parent_id sunucuya bırakılır.
+export interface CreateSubtaskInput {
+  title: string
+}
 interface UserSummary {
   id: number
   full_name: string
@@ -26,7 +39,7 @@ export interface Task {
   assignee: UserSummary | null
   created_by: UserSummary | null
   sprint_id: number | null
-  labels: { id: number; name: string; color: string }[]
+  labels: Label[]
   subtask_count: number
   subtask_done_count: number
   depends_on: number[]
@@ -37,7 +50,7 @@ export interface Task {
   updated_at: string
 }
 
-// Etiket ve sprint düzenlemesi sonraki görevlere bırakılır.
+// Sprint düzenlemesi sonraki görevlere bırakılır.
 export interface UpdateTaskInput {
   title?: string
   description?: string | null
@@ -46,4 +59,5 @@ export interface UpdateTaskInput {
   // İsteklerde null ile temizleme sözleşmede tanımlı değil; değişmeyen alanı gönderme.
   priority?: TaskPriority
   story_points?: StoryPoints
+  label_ids?: number[]
 }

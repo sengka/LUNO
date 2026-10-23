@@ -11,6 +11,8 @@ import { ApiError } from '@/lib/api'
 import { taskKeys, tasksApi } from './api'
 import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskEditForm } from './TaskEditForm'
+import { TaskLabels } from './TaskLabels'
+import { TaskSubtasks } from './TaskSubtasks'
 import type { TaskStatus } from './types'
 import { PRIORITY_LABELS } from './types'
 
@@ -76,6 +78,7 @@ function TaskDetailContent() {
                     <p className="whitespace-pre-wrap break-words text-muted-foreground">{task.description || 'Bu görev için açıklama eklenmemiş.'}</p>
                   </>}
                 </div>
+                <TaskSubtasks key={task.id} task={task} />
               </section>
               <aside className="border-t pt-6 md:border-t-0 md:border-l md:pt-0 md:pl-6" aria-label="Görev bilgileri">
                 <h2 className="mb-6 text-lg font-semibold text-primary">Görev bilgileri</h2>
@@ -95,6 +98,7 @@ function TaskDetailContent() {
                     <dd className="mt-2">{task.story_points === null ? 'Belirtilmedi' : <Badge variant="outline">{task.story_points} puan</Badge>}</dd>
                   </div>
                 </dl>
+                <TaskLabels key={task.id} task={task} />
               </aside>
             </div>}
           </div>
