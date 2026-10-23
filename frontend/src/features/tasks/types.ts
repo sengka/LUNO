@@ -1,5 +1,11 @@
 export type TaskStatus = 'ONAY_BEKLIYOR' | 'REDDEDILDI' | 'TODO' | 'IN_PROGRESS' | 'REVIEW_TESTING' | 'DONE'
 type Level = 'DUSUK' | 'ORTA' | 'YUKSEK'
+export type TaskPriority = Level
+export const PRIORITY_LABELS: Record<TaskPriority, string> = {
+  DUSUK: 'Düşük', ORTA: 'Orta', YUKSEK: 'Yüksek',
+}
+export const STORY_POINT_OPTIONS = [1, 2, 3, 5, 8, 13] as const
+export type StoryPoints = (typeof STORY_POINT_OPTIONS)[number]
 interface UserSummary {
   id: number
   full_name: string
@@ -13,8 +19,8 @@ export interface Task {
   title: string
   description: string | null
   status: TaskStatus
-  priority: Level | null
-  story_points: 1 | 2 | 3 | 5 | 8 | 13 | null
+  priority: TaskPriority | null
+  story_points: StoryPoints | null
   start_date: string | null
   due_date: string | null
   assignee: UserSummary | null
@@ -31,10 +37,13 @@ export interface Task {
   updated_at: string
 }
 
-// #156: diğer düzenlenebilir alanlar sonraki görevlere bırakılır.
+// Etiket ve sprint düzenlemesi sonraki görevlere bırakılır.
 export interface UpdateTaskInput {
   title?: string
   description?: string | null
   start_date?: string | null
   due_date?: string | null
+  // İsteklerde null ile temizleme sözleşmede tanımlı değil; değişmeyen alanı gönderme.
+  priority?: TaskPriority
+  story_points?: StoryPoints
 }

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { FormField } from '@/components/form/FormField'
@@ -7,13 +7,22 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ApiError } from '@/lib/api'
 import { applyApiErrors } from '@/lib/form-errors'
 import { taskKeys, tasksApi } from './api'
-import type { Task, UpdateTaskInput } from './types'
+import { PRIORITY_LABELS, STORY_POINT_OPTIONS } from './types'
+import type { StoryPoints, Task, TaskPriority, UpdateTaskInput } from './types'
 
-interface Values { title: string; description: string; start_date: string; due_date: string }
-const fields = ['title', 'description', 'start_date', 'due_date'] as const
+interface Values {
+  title: string
+  description: string
+  start_date: string
+  due_date: string
+  priority: TaskPriority | null
+  story_points: StoryPoints | null
+}
+const fields = ['title', 'description', 'start_date', 'due_date', 'priority', 'story_points'] as const
 
 export function TaskEditForm({ task, onClose }: { task: Task; onClose: () => void }) {
   const client = useQueryClient()
@@ -24,6 +33,7 @@ export function TaskEditForm({ task, onClose }: { task: Task; onClose: () => voi
   const form = useForm<Values>({ defaultValues: {
     title: task.title, description: task.description ?? '',
     start_date: task.start_date ?? '', due_date: task.due_date ?? '',
+    priority: task.priority, story_points: task.story_points,
   } })
   const mutation = useMutation({
     mutationFn: (input: UpdateTaskInput) => tasksApi.update(task.id, input),
@@ -59,6 +69,8 @@ export function TaskEditForm({ task, onClose }: { task: Task; onClose: () => voi
     if (values.description !== (initialTask.description ?? '')) changes.description = values.description || null
     if (values.start_date !== (initialTask.start_date ?? '')) changes.start_date = values.start_date || null
     if (values.due_date !== (initialTask.due_date ?? '')) changes.due_date = values.due_date || null
+    if (values.priority !== null && values.priority !== initialTask.priority) changes.priority = values.priority
+    if (values.story_points !== null && values.story_points !== initialTask.story_points) changes.story_points = values.story_points
     const startDate = changes.start_date === undefined ? task.start_date : changes.start_date
     const dueDate = changes.due_date === undefined ? task.due_date : changes.due_date
     if (startDate && dueDate && dueDate < startDate) {
@@ -89,6 +101,38 @@ export function TaskEditForm({ task, onClose }: { task: Task; onClose: () => voi
               <Input id={`task-${field}`} type="date" aria-invalid={!!form.formState.errors[field]} aria-describedby={form.formState.errors[field] ? `task-${field}-error` : undefined} {...form.register(field)} />
             </FormField>
           ))}
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField id="task-priority" label="Öncelik" error={form.formState.errors.priority?.message}>
+            <Controller name="priority" control={form.control} rules={{ validate: (value) =>
+              (value === null && initialTask.priority === null) || (value !== null && Object.hasOwn(PRIORITY_LABELS, value)) || 'Geçerli bir öncelik seçin.',
+            }} render={({ field }) => (
+              <Select value={field.value ?? 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)} disabled={mutation.isPending}>
+                <SelectTrigger id="task-priority" ref={field.ref} onBlur={field.onBlur} className="w-full" aria-invalid={!!form.formState.errors.priority} aria-describedby={form.formState.errors.priority ? 'task-priority-error' : undefined}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {initialTask.priority === null && <SelectItem value="none">Belirtilmedi (değiştirme)</SelectItem>}
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )} />
+          </FormField>
+          <FormField id="task-story-points" label="Efor puanı" error={form.formState.errors.story_points?.message}>
+            <Controller name="story_points" control={form.control} rules={{ validate: (value) =>
+              (value === null && initialTask.story_points === null) || (value !== null && STORY_POINT_OPTIONS.includes(value)) || 'Efor puanı 1, 2, 3, 5, 8 veya 13 olmalıdır.',
+            }} render={({ field }) => (
+              <Select value={field.value === null ? 'none' : String(field.value)} onValueChange={(value) => field.onChange(value === 'none' ? null : Number(value))} disabled={mutation.isPending}>
+                <SelectTrigger id="task-story-points" ref={field.ref} onBlur={field.onBlur} className="w-full" aria-invalid={!!form.formState.errors.story_points} aria-describedby={form.formState.errors.story_points ? 'task-story-points-error' : undefined}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {initialTask.story_points === null && <SelectItem value="none">Belirtilmedi (değiştirme)</SelectItem>}
+                  {STORY_POINT_OPTIONS.map((value) => <SelectItem key={value} value={String(value)}>{value} puan</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )} />
+          </FormField>
         </div>
       </fieldset>
       {error && <Alert variant="destructive" role="alert"><AlertDescription>{error}</AlertDescription></Alert>}

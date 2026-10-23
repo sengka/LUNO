@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { XIcon } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { useAuth } from '@/features/auth/auth-context'
 import { ApiError } from '@/lib/api'
@@ -11,6 +12,7 @@ import { taskKeys, tasksApi } from './api'
 import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskEditForm } from './TaskEditForm'
 import type { TaskStatus } from './types'
+import { PRIORITY_LABELS } from './types'
 
 const statuses: Record<TaskStatus, string> = {
   TODO: 'Yapılacak', IN_PROGRESS: 'Devam ediyor', REVIEW_TESTING: 'İnceleme / Test',
@@ -82,6 +84,16 @@ function TaskDetailContent() {
                     ['Durum', statuses[task.status]], ['Sorumlu', task.assignee?.full_name ?? 'Atanmamış'],
                     ['Başlangıç tarihi', formatDate(task.start_date)], ['Teslim tarihi', formatDate(task.due_date)],
                   ].map(([label, value]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd className="mt-2 break-words rounded-xl border p-3">{value}</dd></div>)}
+                  <div>
+                    <dt className="text-muted-foreground">Öncelik</dt>
+                    <dd className="mt-2">
+                      {task.priority === null ? 'Belirtilmedi' : <Badge variant={task.priority === 'YUKSEK' ? 'destructive' : task.priority === 'ORTA' ? 'secondary' : 'outline'}>{PRIORITY_LABELS[task.priority]}</Badge>}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Efor puanı</dt>
+                    <dd className="mt-2">{task.story_points === null ? 'Belirtilmedi' : <Badge variant="outline">{task.story_points} puan</Badge>}</dd>
+                  </div>
                 </dl>
               </aside>
             </div>}
