@@ -19,11 +19,6 @@
 
 ## Kanıtlar
 
-### Sena 
-![Sena proje listesi](sena-proje-listesi.png)
-
-### Gizem 
-![Gizem proje listesi](gizem-proje-listesi.png)
-
-### Can 
-![Can boş liste](can-bos-liste.png)
+![Sena proje listesi](kanitlar/us-007/sena-proje-listesi.png)
+![Gizem proje listesi](kanitlar/us-007/gizem-proje-listesi.png)
+![Can boş liste](kanitlar/us-007/can-bos-liste.png)
