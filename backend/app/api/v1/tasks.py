@@ -18,6 +18,8 @@ from app.schemas.task import (
     TaskAssigneeUpdateRequest,
     TaskResponse,
     TaskListResponse,
+    BoardColumn,
+    BoardResponse,
 )
 from app.services.tasks import create_task
 from app.schemas.project import UserSummary
@@ -196,6 +198,68 @@ def list_project_tasks(
         page=page,
         limit=limit,
     )
+
+
+@router.get(
+    "/projects/{project_id}/board",
+    response_model=BoardResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Kanban panosu (US-015 / 7.1)",
+)
+def get_project_board(
+    project_id: int,
+    sprint_id: Optional[int] = Query(None, description="Sprint id'si"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Projenin Kanban panosunu döner (US-015, FR-042, sözleşme 7.1).
+    Erişim: Proje üyesi (FR-013).
+    - Proje yoksa 404 PROJECT_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Yalnızca aktif ana görevler döner (TODO, IN_PROGRESS, REVIEW_TESTING, DONE).
+    - 4 sütun her zaman tanımlı sırada döner (TODO, IN_PROGRESS, REVIEW_TESTING, DONE).
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    active_statuses = [
+        TaskStatus.TODO,
+        TaskStatus.IN_PROGRESS,
+        TaskStatus.REVIEW_TESTING,
+        TaskStatus.DONE,
+    ]
+
+    query = db.query(Task).filter(
+        Task.project_id == project_id,
+        Task.parent_id.is_(None),
+        Task.status.in_(active_statuses),
+    )
+
+    if sprint_id is not None:
+        query = query.filter(Task.sprint_id == sprint_id)
+
+    tasks = query.order_by(Task.id.asc()).all()
+
+    tasks_by_status = {s.value: [] for s in active_statuses}
+    for t in tasks:
+        tasks_by_status[t.status.value].append(build_task_response(t))
+
+    columns = [
+        BoardColumn(status=s.value, tasks=tasks_by_status[s.value])
+        for s in active_statuses
+    ]
+
+    return BoardResponse(columns=columns)
 
 
 @router.get(

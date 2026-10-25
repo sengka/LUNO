@@ -141,3 +141,14 @@ class TaskListResponse(BaseModel):
     total: int
     page: int
     limit: int
+
+
+class BoardColumn(BaseModel):
+    """Sözleşme 7.1: Kanban sütunu."""
+    status: str
+    tasks: List[TaskResponse]
+
+
+class BoardResponse(BaseModel):
+    """Sözleşme 7.1: Kanban panosu yanıtı."""
+    columns: List[BoardColumn]

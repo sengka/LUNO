@@ -955,3 +955,116 @@ def test_member_cannot_delete_task_forbidden(client: TestClient, db_session: Ses
     res = client.delete(f"/api/v1/tasks/{task.id}", headers=headers)
     assert res.status_code == 403
     assert res.json()["error"]["code"] == "FORBIDDEN"
+
+
+# ============================================================================
+# US-015 (Issue #161) - Kanban panosu API'si Testleri
+# ============================================================================
+
+def test_get_kanban_board_all_four_columns(client: TestClient, db_session: Session):
+    """FR-042: Kanban panosu TODO, IN_PROGRESS, REVIEW_TESTING ve DONE sütunlarını döner."""
+    admin_data = create_user(client, "Admin US15-1", "admin_us15_1@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    t_todo = Task(project_id=project.id, title="Pano TODO", status=TaskStatus.TODO)
+    t_prog = Task(project_id=project.id, title="Pano Prog", status=TaskStatus.IN_PROGRESS)
+    t_rev = Task(project_id=project.id, title="Pano Rev", status=TaskStatus.REVIEW_TESTING)
+    t_done = Task(project_id=project.id, title="Pano Done", status=TaskStatus.DONE)
+    db_session.add_all([t_todo, t_prog, t_rev, t_done])
+    db_session.commit()
+
+    token = get_token(client, "admin_us15_1@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(f"/api/v1/projects/{project.id}/board", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "columns" in data
+    assert len(data["columns"]) == 4
+
+    column_statuses = [col["status"] for col in data["columns"]]
+    assert column_statuses == ["TODO", "IN_PROGRESS", "REVIEW_TESTING", "DONE"]
+
+    # Her sütundaki görev sayısı 1 olmalı
+    assert len(data["columns"][0]["tasks"]) == 1
+    assert data["columns"][0]["tasks"][0]["title"] == "Pano TODO"
+    assert len(data["columns"][1]["tasks"]) == 1
+    assert data["columns"][1]["tasks"][0]["title"] == "Pano Prog"
+    assert len(data["columns"][2]["tasks"]) == 1
+    assert data["columns"][2]["tasks"][0]["title"] == "Pano Rev"
+    assert len(data["columns"][3]["tasks"]) == 1
+    assert data["columns"][3]["tasks"][0]["title"] == "Pano Done"
+
+
+def test_kanban_board_excludes_subtasks_and_pending(client: TestClient, db_session: Session):
+    """FR-042: Alt görevler ve onay bekleyen / reddedilen görevler panoda yer almaz."""
+    admin_data = create_user(client, "Admin US15-2", "admin_us15_2@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    main_task = Task(project_id=project.id, title="Ana Pano Görevi", status=TaskStatus.TODO)
+    db_session.add(main_task)
+    db_session.flush()
+
+    sub = Task(project_id=project.id, title="Alt Görev Pano", status=TaskStatus.TODO, parent_id=main_task.id)
+    pending = Task(project_id=project.id, title="Onay Bekleyen Pano", status=TaskStatus.ONAY_BEKLIYOR)
+    rejected = Task(project_id=project.id, title="Reddedilen Pano", status=TaskStatus.REDDEDILDI)
+    db_session.add_all([sub, pending, rejected])
+    db_session.commit()
+
+    token = get_token(client, "admin_us15_2@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(f"/api/v1/projects/{project.id}/board", headers=headers)
+    assert res.status_code == 200
+    todo_tasks = res.json()["columns"][0]["tasks"]
+    assert len(todo_tasks) == 1
+    assert todo_tasks[0]["title"] == "Ana Pano Görevi"
+
+
+def test_kanban_board_sprint_filter(client: TestClient, db_session: Session):
+    """Sözleşme 7.1: sprint_id filtresi ile panoda sadece o sprint'e ait görevler döner."""
+    admin_data = create_user(client, "Admin US15-3", "admin_us15_3@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    t_sprint1 = Task(project_id=project.id, title="Sprint 1 İşi", status=TaskStatus.TODO, sprint_id=1)
+    t_sprint2 = Task(project_id=project.id, title="Sprint 2 İşi", status=TaskStatus.TODO, sprint_id=2)
+    db_session.add_all([t_sprint1, t_sprint2])
+    db_session.commit()
+
+    token = get_token(client, "admin_us15_3@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(f"/api/v1/projects/{project.id}/board?sprint_id=1", headers=headers)
+    assert res.status_code == 200
+    todo_tasks = res.json()["columns"][0]["tasks"]
+    assert len(todo_tasks) == 1
+    assert todo_tasks[0]["title"] == "Sprint 1 İşi"
+
+
+def test_kanban_board_non_member_access_denied(client: TestClient, db_session: Session):
+    """FR-013: Proje üyesi olmayan kullanıcı panoya erişemez (403 PROJECT_ACCESS_DENIED)."""
+    admin_data = create_user(client, "Admin US15-4", "admin_us15_4@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    outsider = create_user(client, "Dış Kişi US15", "outsider_us15@luno.com")
+    token = get_token(client, "outsider_us15@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(f"/api/v1/projects/{project.id}/board", headers=headers)
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+
+def test_kanban_board_project_not_found(client: TestClient, db_session: Session):
+    admin_data = create_user(client, "Admin US15-5", "admin_us15_5@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    token = get_token(client, "admin_us15_5@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get("/api/v1/projects/99999/board", headers=headers)
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
