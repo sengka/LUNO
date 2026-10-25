@@ -18,6 +18,7 @@ from app.database import Base
 from app.models.enums import STORY_POINT_VALUES, Priority, TaskStatus
 
 if TYPE_CHECKING:
+    from app.models.label import Label
     from app.models.project import Project
     from app.models.user import User
 
@@ -104,6 +105,10 @@ class Task(Base):
     assignee: Mapped["User | None"] = relationship(foreign_keys=[assignee_id])
     created_by: Mapped["User | None"] = relationship(foreign_keys=[created_by_id])
     parent: Mapped["Task | None"] = relationship(back_populates="subtasks", remote_side=[id])
+    # Etiketler (US-033, FR-037). task_labels tablosu app/models/label.py içinde.
+    labels: Mapped[list["Label"]] = relationship(
+        secondary="task_labels", order_by="Label.name", lazy="selectin"
+    )
     subtasks: Mapped[list["Task"]] = relationship(
         back_populates="parent", cascade="all, delete-orphan"
     )
