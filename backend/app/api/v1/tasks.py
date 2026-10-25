@@ -7,9 +7,11 @@ from app.models.user import User, SystemRole
 from app.models.task import Task
 from app.models.project_member import ProjectMember
 from app.models.enums import TaskStatus
-from app.schemas.task import TaskStatusUpdateRequest, TaskResponse
+from app.schemas.task import TaskCreateRequest, TaskLabel, TaskStatusUpdateRequest, TaskResponse
+from app.services.tasks import create_task
 from app.schemas.project import UserSummary
 from app.core.exceptions import (
+    ProjectAccessDeniedException,
     TaskNotFoundException,
     TaskNotActiveException,
     NotTaskAssigneeException,
@@ -28,7 +30,7 @@ def _user_summary(user: User | None) -> UserSummary | None:
 def build_task_response(task: Task) -> TaskResponse:
     """Task modelini sözleşme 2. bölümdeki Task nesnesine çevirir.
 
-    Henüz tablosu olmayan alanlar (labels, depends_on, comment_count, file_count)
+    Henüz tablosu olmayan alanlar (depends_on, comment_count, file_count)
     boş/0 döner; risk_level Sprint 7'de (bölüm 12.1) hesaplanacağı için şimdilik null.
     """
     subtasks = task.subtasks or []
@@ -46,7 +48,7 @@ def build_task_response(task: Task) -> TaskResponse:
         assignee=_user_summary(task.assignee),
         created_by=_user_summary(task.created_by),
         sprint_id=task.sprint_id,
-        labels=[],
+        labels=[TaskLabel.model_validate(label) for label in task.labels],
         subtask_count=len(subtasks),
         subtask_done_count=sum(1 for st in subtasks if st.status == TaskStatus.DONE),
         depends_on=[],
@@ -100,3 +102,40 @@ def update_task_status(
     db.refresh(task)
 
     return build_task_response(task)
+
+
+@router.post(
+    "/{task_id}/subtasks",
+    response_model=TaskResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Alt görev ekle (US-033 / 6.10)",
+)
+def create_subtask(
+    task_id: int,
+    task_in: TaskCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Ana göreve bağlı alt görev oluşturur (US-033, FR-038, FR-039, sözleşme 6.10).
+    Alanlar ve kurallar görev oluşturmayla (6.2) aynıdır; proje ve `parent_id` ana görevden alınır.
+    Erişim: ana görevin projesinin üyesi.
+    - Ana görev yoksa 404 TASK_NOT_FOUND, proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Ana görev zaten bir alt görevse 400 NESTED_SUBTASK_NOT_ALLOWED
+    - Ekip üyesi eklerse alt görev ONAY_BEKLIYOR durumunda kaydedilir (FR-026)
+    """
+    parent = db.query(Task).filter(Task.id == task_id).first()
+    if not parent:
+        raise TaskNotFoundException()
+
+    is_member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == parent.project_id, ProjectMember.user_id == current_user.id)
+        .first()
+        is not None
+    )
+    if not is_member:
+        raise ProjectAccessDeniedException()
+
+    subtask = create_task(db, parent.project_id, task_in, current_user, parent=parent)
+    return build_task_response(subtask)

@@ -143,3 +143,27 @@ class NotTaskAssigneeException(CustomAPIException):
             message=message
         )
 
+
+class LabelExistsException(CustomAPIException):
+    def __init__(self, message: str = "Bu etiket zaten var."):
+        super().__init__(
+            status_code=409,
+            code="LABEL_EXISTS",
+            message=message
+        )
+
+class AssigneeNotMemberException(CustomAPIException):
+    def __init__(self, message: str = "Atanan kişi projenin üyesi değil."):
+        super().__init__(
+            status_code=400,
+            code="ASSIGNEE_NOT_MEMBER",
+            message=message
+        )
+
+class NestedSubtaskNotAllowedException(CustomAPIException):
+    def __init__(self, message: str = "Alt görevlere alt görev eklenemez."):
+        super().__init__(
+            status_code=400,
+            code="NESTED_SUBTASK_NOT_ALLOWED",
+            message=message
+        )

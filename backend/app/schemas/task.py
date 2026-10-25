@@ -1,7 +1,9 @@
 from datetime import date, datetime
 from typing import Optional, List
 from enum import Enum
-from pydantic import BaseModel, Field, field_serializer, ConfigDict
+from pydantic import BaseModel, Field, field_serializer, field_validator, ConfigDict
+
+from app.models.enums import STORY_POINT_VALUES, Priority
 
 from app.schemas.project import UserSummary
 
@@ -20,6 +22,39 @@ class TaskStatusUpdateRequest(BaseModel):
         ...,
         description="Yeni görev durumu (TODO, IN_PROGRESS, REVIEW_TESTING, DONE)"
     )
+
+
+class TaskCreateRequest(BaseModel):
+    """Sözleşme 6.2 (görev oluştur) ve 6.10 (alt görev ekle) istek gövdesi.
+
+    Alt görevde `parent_id` ve proje, ana görevden otomatik alınır.
+    """
+    title: str = Field(..., min_length=2, max_length=200, description="Görev başlığı (2-200 karakter)")
+    description: Optional[str] = None
+    assignee_id: Optional[int] = None
+    start_date: Optional[date] = None
+    due_date: Optional[date] = None
+    priority: Optional[Priority] = None
+    story_points: Optional[int] = Field(None, description="Yalnızca 1, 2, 3, 5, 8, 13 (FR-036)")
+    label_ids: List[int] = []
+    sprint_id: Optional[int] = None
+    # Kapasite kontrolü (sözleşme 6.6, FR-073) eklendiğinde kullanılacak.
+    confirm_over_capacity: bool = False
+
+    @field_validator("title")
+    @classmethod
+    def strip_title(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("Görev başlığı zorunludur.")
+        return value
+
+    @field_validator("story_points")
+    @classmethod
+    def check_story_points(cls, value: Optional[int]) -> Optional[int]:
+        if value is not None and value not in STORY_POINT_VALUES:
+            raise ValueError("Efor puanı 1, 2, 3, 5, 8 veya 13 olmalıdır.")
+        return value
 
 
 class TaskLabel(BaseModel):
