@@ -1068,3 +1068,102 @@ def test_kanban_board_project_not_found(client: TestClient, db_session: Session)
     res = client.get("/api/v1/projects/99999/board", headers=headers)
     assert res.status_code == 404
     assert res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+
+
+# ============================================================================
+# US-032 (Issue #164) - Öncelik ve efor puanı Testleri
+# ============================================================================
+
+def test_priority_and_story_points_on_create(client: TestClient, db_session: Session):
+    """FR-035, FR-036: Görev oluştururken priority ve story_points kabul edilir."""
+    admin_data = create_user(client, "Admin US32-1", "admin_us32_1@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    token = get_token(client, "admin_us32_1@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for sp in [1, 2, 3, 5, 8, 13]:
+        res = client.post(
+            f"/api/v1/projects/{project.id}/tasks",
+            json={"title": f"Görev SP {sp}", "story_points": sp, "priority": "ORTA"},
+            headers=headers,
+        )
+        assert res.status_code == 201
+        assert res.json()["story_points"] == sp
+        assert res.json()["priority"] == "ORTA"
+
+    for prio in ["DUSUK", "ORTA", "YUKSEK"]:
+        res = client.post(
+            f"/api/v1/projects/{project.id}/tasks",
+            json={"title": f"Görev Prio {prio}", "priority": prio},
+            headers=headers,
+        )
+        assert res.status_code == 201
+        assert res.json()["priority"] == prio
+
+
+def test_invalid_story_points_on_create_rejected(client: TestClient, db_session: Session):
+    """FR-036: Fibonacci (1, 2, 3, 5, 8, 13) dışındaki efor puanları 422 ve Türkçe mesajla reddedilir."""
+    admin_data = create_user(client, "Admin US32-2", "admin_us32_2@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    token = get_token(client, "admin_us32_2@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for invalid_sp in [0, 4, 6, 7, 10, 21, -3]:
+        res = client.post(
+            f"/api/v1/projects/{project.id}/tasks",
+            json={"title": "Geçersiz SP", "story_points": invalid_sp},
+            headers=headers,
+        )
+        assert res.status_code == 422
+        data = res.json()
+        assert data["error"]["code"] == "VALIDATION_ERROR"
+        assert "story_points" in data["error"]["fields"]
+        assert "Efor puanı 1, 2, 3, 5, 8 veya 13 olmalıdır." in data["error"]["fields"]["story_points"]
+
+
+def test_priority_and_story_points_on_update(client: TestClient, db_session: Session):
+    """FR-035, FR-036: Görev düzenlerken priority ve story_points güncellenebilir."""
+    admin_data = create_user(client, "Admin US32-3", "admin_us32_3@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    task = Task(project_id=project.id, title="Düzenlenecek Görev", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_us32_3@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Geçerli güncelleme
+    res = client.patch(
+        f"/api/v1/tasks/{task.id}",
+        json={"priority": "YUKSEK", "story_points": 13},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["priority"] == "YUKSEK"
+    assert res.json()["story_points"] == 13
+
+    # Geçersiz story_points güncellemesi 422
+    res_invalid_sp = client.patch(
+        f"/api/v1/tasks/{task.id}",
+        json={"story_points": 9},
+        headers=headers,
+    )
+    assert res_invalid_sp.status_code == 422
+    assert res_invalid_sp.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert "Efor puanı 1, 2, 3, 5, 8 veya 13 olmalıdır." in res_invalid_sp.json()["error"]["fields"]["story_points"]
+
+    # Geçersiz priority güncellemesi 422
+    res_invalid_prio = client.patch(
+        f"/api/v1/tasks/{task.id}",
+        json={"priority": "KRITIK"},
+        headers=headers,
+    )
+    assert res_invalid_prio.status_code == 422
+    assert res_invalid_prio.json()["error"]["code"] == "VALIDATION_ERROR"
