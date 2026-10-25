@@ -1,24 +1,35 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, status
+from typing import Optional
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User, SystemRole
+from app.models.project import Project
 from app.models.task import Task
+from app.models.label import Label
 from app.models.project_member import ProjectMember
 from app.models.enums import TaskStatus
-from app.schemas.task import TaskCreateRequest, TaskLabel, TaskStatusUpdateRequest, TaskResponse
+from app.schemas.task import (
+    TaskCreateRequest,
+    TaskLabel,
+    TaskStatusUpdateRequest,
+    TaskResponse,
+    TaskListResponse,
+)
 from app.services.tasks import create_task
 from app.schemas.project import UserSummary
 from app.core.exceptions import (
     ProjectAccessDeniedException,
+    ProjectNotFoundException,
     TaskNotFoundException,
     TaskNotActiveException,
     NotTaskAssigneeException,
+    ForbiddenException,
 )
 from app.api.deps import get_current_user
 
-router = APIRouter(prefix="/tasks", tags=["Görevler"])
+router = APIRouter(tags=["Görevler"])
 
 
 def _user_summary(user: User | None) -> UserSummary | None:
@@ -60,8 +71,162 @@ def build_task_response(task: Task) -> TaskResponse:
     )
 
 
+@router.post(
+    "/projects/{project_id}/tasks",
+    response_model=TaskResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Görev oluştur (US-011 / 6.2)",
+)
+def create_project_task(
+    project_id: int,
+    task_in: TaskCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Projeye yeni görev ekler (US-011, FR-024, FR-025, sözleşme 6.2).
+    Erişim: Yönetici ve proje üyesi (FR-012, FR-013).
+    - Proje yoksa 404 PROJECT_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Ekip üyesi eklemeye çalışırsa 403 FORBIDDEN (Sprint 8'de US-030 ile onay mekanizması gelecek)
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    if current_user.role != SystemRole.YONETICI.value:
+        raise ForbiddenException("Bu işlem için yetkiniz yok.")
+
+    task = create_task(db, project_id, task_in, current_user, parent=None)
+    return build_task_response(task)
+
+
+@router.get(
+    "/projects/{project_id}/tasks",
+    response_model=TaskListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Görevleri listele ve filtrele (US-011 / 6.1)",
+)
+def list_project_tasks(
+    project_id: int,
+    search: Optional[str] = Query(None, description="Görev adında arama"),
+    assignee_id: Optional[int] = Query(None, description="Atanan kişi"),
+    status: Optional[str] = Query(None, description="Durum (virgülle birden fazla: TODO,IN_PROGRESS)"),
+    priority: Optional[str] = Query(None, description="Öncelik"),
+    label_id: Optional[int] = Query(None, description="Etiket"),
+    sprint_id: Optional[int] = Query(None, description="Sprint"),
+    parent_id: Optional[int] = Query(None, description="Alt görevler için ana görev id'si"),
+    include_pending: bool = Query(False, description="Onay bekleyen ve reddedilen görevleri de getir"),
+    page: int = Query(1, ge=1, description="Sayfa numarası"),
+    limit: int = Query(10, ge=1, le=100, description="Sayfa boyutu"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Projenin görevlerini listeler (US-011, US-034, FR-041, sözleşme 6.1).
+    Erişim: Proje üyesi (FR-013).
+    - Proje yoksa 404 PROJECT_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - parent_id verilmezse sadece ana görevler döner.
+    - include_pending false ise ONAY_BEKLIYOR ve REDDEDILDI görevler filtrelenir.
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    query = db.query(Task).filter(Task.project_id == project_id)
+
+    if parent_id is not None:
+        query = query.filter(Task.parent_id == parent_id)
+    else:
+        query = query.filter(Task.parent_id.is_(None))
+
+    if not include_pending:
+        query = query.filter(
+            Task.status.notin_([TaskStatus.ONAY_BEKLIYOR, TaskStatus.REDDEDILDI])
+        )
+
+    if search:
+        query = query.filter(Task.title.ilike(f"%{search.strip()}%"))
+
+    if assignee_id is not None:
+        query = query.filter(Task.assignee_id == assignee_id)
+
+    if status:
+        status_list = [s.strip() for s in status.split(",") if s.strip()]
+        if status_list:
+            query = query.filter(Task.status.in_(status_list))
+
+    if priority:
+        query = query.filter(Task.priority == priority)
+
+    if sprint_id is not None:
+        query = query.filter(Task.sprint_id == sprint_id)
+
+    if label_id is not None:
+        query = query.filter(Task.labels.any(Label.id == label_id))
+
+    total = query.count()
+    tasks = query.order_by(Task.id.desc()).offset((page - 1) * limit).limit(limit).all()
+
+    return TaskListResponse(
+        items=[build_task_response(t) for t in tasks],
+        total=total,
+        page=page,
+        limit=limit,
+    )
+
+
+@router.get(
+    "/tasks/{task_id}",
+    response_model=TaskResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Görev detayı (US-011 / 6.3)",
+)
+def get_task(
+    task_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Görev detayını döner (US-011, sözleşme 6.3).
+    Erişim: Görevin ait olduğu projenin üyesi (FR-013).
+    - Görev yoksa 404 TASK_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    """
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise TaskNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == task.project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    return build_task_response(task)
+
+
 @router.patch(
-    "/{task_id}/status",
+    "/tasks/{task_id}/status",
     response_model=TaskResponse,
     status_code=status.HTTP_200_OK,
     summary="Görev durumunu değiştir (US-014 / 6.5)",
@@ -105,7 +270,7 @@ def update_task_status(
 
 
 @router.post(
-    "/{task_id}/subtasks",
+    "/tasks/{task_id}/subtasks",
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Alt görev ekle (US-033 / 6.10)",

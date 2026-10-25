@@ -99,3 +99,11 @@ class TaskResponse(BaseModel):
     @field_serializer("updated_at")
     def serialize_updated_at(self, dt: datetime, _info):
         return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+class TaskListResponse(BaseModel):
+    """Sözleşme 1.6 & 6.1: Sayfalı görev listesi yanıtı."""
+    items: List[TaskResponse]
+    total: int
+    page: int
+    limit: int
