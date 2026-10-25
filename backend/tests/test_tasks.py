@@ -798,3 +798,160 @@ def test_assign_task_not_found(client: TestClient, db_session: Session):
     res = client.patch("/api/v1/tasks/99999/assignee", json={"assignee_id": admin_data["id"]}, headers=headers)
     assert res.status_code == 404
     assert res.json()["error"]["code"] == "TASK_NOT_FOUND"
+
+
+# ============================================================================
+# US-013 (Issue #155) - Görev düzenleme ve silme API'si Testleri
+# ============================================================================
+
+def test_admin_updates_task_fields_successfully(client: TestClient, db_session: Session):
+    """FR-031: Yönetici görev bilgilerini düzenleyebilir."""
+    admin_data = create_user(client, "Admin US13-1", "admin_us13_1@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    task = Task(
+        project_id=project.id,
+        title="Eski Başlık",
+        description="Eski Açıklama",
+        status=TaskStatus.TODO,
+        priority=Priority.DUSUK,
+        story_points=1,
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_us13_1@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    payload = {
+        "title": "Yeni Başlık",
+        "description": "Yeni Açıklama",
+        "priority": "YUKSEK",
+        "story_points": 8,
+        "start_date": "2026-10-15",
+        "due_date": "2026-10-25",
+    }
+    res = client.patch(f"/api/v1/tasks/{task.id}", json=payload, headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["title"] == "Yeni Başlık"
+    assert data["description"] == "Yeni Açıklama"
+    assert data["priority"] == "YUKSEK"
+    assert data["story_points"] == 8
+    assert data["start_date"] == "2026-10-15"
+    assert data["due_date"] == "2026-10-25"
+
+
+def test_update_task_invalid_date_range(client: TestClient, db_session: Session):
+    """FR-025: Teslim tarihi başlangıç tarihinden önce olamaz (400 INVALID_DATE_RANGE)."""
+    admin_data = create_user(client, "Admin US13-2", "admin_us13_2@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    task = Task(project_id=project.id, title="Görev", status=TaskStatus.TODO, start_date=date(2026, 10, 15))
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_us13_2@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch(f"/api/v1/tasks/{task.id}", json={"due_date": "2026-10-10"}, headers=headers)
+    assert res.status_code == 400
+    assert res.json()["error"]["code"] == "INVALID_DATE_RANGE"
+
+
+def test_update_task_foreign_label_422(client: TestClient, db_session: Session):
+    """FR-037: Başka projeye ait etiket 422 VALIDATION_ERROR döndürür."""
+    from app.models.label import Label
+    admin_data = create_user(client, "Admin US13-3", "admin_us13_3@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+    other_project = create_project(db_session, admin_data["id"])
+
+    foreign_label = Label(project_id=other_project.id, name="backend", color="#123456")
+    db_session.add(foreign_label)
+    task = Task(project_id=project.id, title="Görev", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(foreign_label)
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_us13_3@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch(f"/api/v1/tasks/{task.id}", json={"label_ids": [foreign_label.id]}, headers=headers)
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_member_cannot_update_task_forbidden(client: TestClient, db_session: Session):
+    """FR-012: Ekip üyesi görevi düzenleyemez (403 FORBIDDEN)."""
+    admin_data = create_user(client, "Admin US13-4", "admin_us13_4@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    member_data = create_user(client, "Uye US13-4", "member_us13_4@luno.com")
+    add_member_to_project(db_session, project.id, member_data["id"])
+
+    task = Task(project_id=project.id, title="Görev", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "member_us13_4@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch(f"/api/v1/tasks/{task.id}", json={"title": "Hacker Başlık"}, headers=headers)
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "FORBIDDEN"
+
+
+def test_admin_deletes_task_and_cascades_subtasks(client: TestClient, db_session: Session):
+    """FR-032: Yönetici görevi silebilir; alt görevler de birlikte silinir (204)."""
+    admin_data = create_user(client, "Admin US13-5", "admin_us13_5@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    parent_task = Task(project_id=project.id, title="Ana Görev Silinecek", status=TaskStatus.TODO)
+    db_session.add(parent_task)
+    db_session.flush()
+
+    sub1 = Task(project_id=project.id, title="Alt Görev 1", status=TaskStatus.TODO, parent_id=parent_task.id)
+    sub2 = Task(project_id=project.id, title="Alt Görev 2", status=TaskStatus.IN_PROGRESS, parent_id=parent_task.id)
+    db_session.add_all([sub1, sub2])
+    db_session.commit()
+
+    token = get_token(client, "admin_us13_5@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.delete(f"/api/v1/tasks/{parent_task.id}", headers=headers)
+    assert res.status_code == 204
+
+    # Ana ve alt görevler silinmiş olmalı
+    assert db_session.query(Task).filter(Task.id == parent_task.id).first() is None
+    assert db_session.query(Task).filter(Task.id.in_([sub1.id, sub2.id])).count() == 0
+
+
+def test_member_cannot_delete_task_forbidden(client: TestClient, db_session: Session):
+    """FR-012: Ekip üyesi görevi silemez (403 FORBIDDEN)."""
+    admin_data = create_user(client, "Admin US13-6", "admin_us13_6@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    member_data = create_user(client, "Uye US13-6", "member_us13_6@luno.com")
+    add_member_to_project(db_session, project.id, member_data["id"])
+
+    task = Task(project_id=project.id, title="Silinemez Görev", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "member_us13_6@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.delete(f"/api/v1/tasks/{task.id}", headers=headers)
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "FORBIDDEN"

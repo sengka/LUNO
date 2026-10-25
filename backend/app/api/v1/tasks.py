@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -12,6 +12,7 @@ from app.models.project_member import ProjectMember
 from app.models.enums import TaskStatus
 from app.schemas.task import (
     TaskCreateRequest,
+    TaskUpdateRequest,
     TaskLabel,
     TaskStatusUpdateRequest,
     TaskAssigneeUpdateRequest,
@@ -21,6 +22,8 @@ from app.schemas.task import (
 from app.services.tasks import create_task
 from app.schemas.project import UserSummary
 from app.core.exceptions import (
+    CustomAPIException,
+    InvalidDateRangeException,
     ProjectAccessDeniedException,
     ProjectNotFoundException,
     TaskNotFoundException,
@@ -225,6 +228,116 @@ def get_task(
         raise ProjectAccessDeniedException()
 
     return build_task_response(task)
+
+
+@router.patch(
+    "/tasks/{task_id}",
+    response_model=TaskResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Görevi düzenle (US-013, US-032 / 6.4)",
+)
+def update_task(
+    task_id: int,
+    task_in: TaskUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Görev bilgilerini düzenler (US-013, US-032, FR-031, FR-035, FR-036, sözleşme 6.4).
+    Erişim: Yönetici (YONETICI rolünde ve projenin üyesi, sözleşme 1.2).
+    - Görev yoksa 404 TASK_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Yönetici değilse 403 FORBIDDEN
+    - Tarih aralığı hatasında 400 INVALID_DATE_RANGE
+    - Etiket bulunamazsa veya bu projeye ait değilse 422 VALIDATION_ERROR
+    """
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise TaskNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == task.project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    if current_user.role != SystemRole.YONETICI.value:
+        raise ForbiddenException("Bu işlem için yetkiniz yok.")
+
+    update_data = task_in.model_dump(exclude_unset=True)
+
+    # Tarih kontrolü (FR-025, FR-031)
+    new_start = update_data.get("start_date", task.start_date)
+    new_due = update_data.get("due_date", task.due_date)
+    if new_start and new_due and new_due < new_start:
+        raise InvalidDateRangeException("Teslim tarihi başlangıç tarihinden önce olamaz.")
+
+    # Etiket kontrolü (FR-037)
+    if "label_ids" in update_data:
+        label_ids = update_data.pop("label_ids")
+        if label_ids:
+            wanted = set(label_ids)
+            labels = db.query(Label).filter(Label.project_id == task.project_id, Label.id.in_(wanted)).all()
+            if len(labels) != len(wanted):
+                raise CustomAPIException(
+                    status_code=422,
+                    code="VALIDATION_ERROR",
+                    message="Lütfen hatalı alanları düzeltin.",
+                    fields={"label_ids": "Etiket bulunamadı veya bu projeye ait değil."},
+                )
+            task.labels = labels
+        else:
+            task.labels = []
+
+    for field, value in update_data.items():
+        setattr(task, field, value)
+
+    task.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(task)
+
+    return build_task_response(task)
+
+
+@router.delete(
+    "/tasks/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Görevi sil (US-013 / 6.7)",
+)
+def delete_task(
+    task_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Görevi siler (US-013, FR-032, sözleşme 6.7).
+    Erişim: Yönetici (YONETICI rolünde ve projenin üyesi, sözleşme 1.2).
+    - Görev yoksa 404 TASK_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Yönetici değilse 403 FORBIDDEN
+    - Silmede alt görevler cascade kuralı ile otomatik silinir (FR-032).
+    """
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise TaskNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == task.project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    if current_user.role != SystemRole.YONETICI.value:
+        raise ForbiddenException("Bu işlem için yetkiniz yok.")
+
+    db.delete(task)
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch(
