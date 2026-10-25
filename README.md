@@ -112,11 +112,17 @@ Backend'in **Environment** bölümünde:
 | `CORS_ORIGINS` | Frontend'in Render URL'si, ör. `https://luno-frontend.onrender.com` |
 | `FRONTEND_URL` | Aynı frontend URL'si |
 
-Frontend'in **Environment** bölümünde `VITE_API_URL` değerini backend URL'si ve `/api/v1` ile ayarlayın; ör. `https://luno-api.onrender.com/api/v1`. Vite bu adresi derleme sırasında pakete eklediği için değişiklikten sonra frontend'i yeniden deploy edin. Frontend API adresini ve backend'in CORS değişkenlerini servislerin oluşturduğu gerçek URL'lere göre doldurun.
+Frontend'in **Environment** bölümünde `VITE_API_URL` değerini backend URL'si ve `/api/v1` ile ayarlayın. Vite bu adresi derleme sırasında pakete eklediği için değişiklikten sonra frontend'i yeniden deploy edin. Frontend API adresini ve backend'in CORS değişkenlerini servislerin oluşturduğu gerçek URL'lere göre doldurun.
 
 Backend başlangıçta `alembic upgrade head` çalıştırır. Canlı veritabanına **`python -m app.seed` çalıştırmayın**; bu komut herkesçe bilinen demo hesaplarını ekler. API'nin `https://<backend-adresi>/health` adresi `{"status":"ok"}` döndürmelidir.
 
-Yayın tamamlandığında canlı frontend ve API adreslerini bu bölüme ekleyin.
+#### Canlı adresler
+
+- **Frontend:** https://luno-frontend.onrender.com
+- **Backend API:** https://luno-api-mu54.onrender.com/api/v1
+- **Backend sağlık kontrolü:** https://luno-api-mu54.onrender.com/health
+
+Render'ın ücretsiz backend servisi bir süre kullanılmadığında uykuya geçebilir; sonraki ilk istek yaklaşık 50 saniye veya daha uzun sürebilir.
 
 ### Backend
 
