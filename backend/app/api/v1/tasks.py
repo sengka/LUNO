@@ -14,6 +14,7 @@ from app.schemas.task import (
     TaskCreateRequest,
     TaskLabel,
     TaskStatusUpdateRequest,
+    TaskAssigneeUpdateRequest,
     TaskResponse,
     TaskListResponse,
 )
@@ -25,6 +26,7 @@ from app.core.exceptions import (
     TaskNotFoundException,
     TaskNotActiveException,
     NotTaskAssigneeException,
+    AssigneeNotMemberException,
     ForbiddenException,
 )
 from app.api.deps import get_current_user
@@ -221,6 +223,59 @@ def get_task(
     )
     if not member:
         raise ProjectAccessDeniedException()
+
+    return build_task_response(task)
+
+
+@router.patch(
+    "/tasks/{task_id}/assignee",
+    response_model=TaskResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Görevi ata (US-012 / 6.6)",
+)
+def update_task_assignee(
+    task_id: int,
+    assignee_in: TaskAssigneeUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Görevi bir proje üyesine atar veya atamasını kaldırır (US-012, FR-030, sözleşme 6.6).
+    Erişim: Yönetici (YONETICI rolünde ve projenin üyesi, sözleşme 1.2).
+    - Görev yoksa 404 TASK_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Yönetici değilse 403 FORBIDDEN
+    - Atanan kişi projenin üyesi değilse 400 ASSIGNEE_NOT_MEMBER
+    - Kapasite kontrolü Sprint 7'de eklenecektir; confirm_over_capacity kabul edilip yok sayılır.
+    """
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise TaskNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == task.project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    if current_user.role != SystemRole.YONETICI.value:
+        raise ForbiddenException("Bu işlem için yetkiniz yok.")
+
+    if assignee_in.assignee_id is not None:
+        target_member = (
+            db.query(ProjectMember)
+            .filter(ProjectMember.project_id == task.project_id, ProjectMember.user_id == assignee_in.assignee_id)
+            .first()
+        )
+        if not target_member:
+            raise AssigneeNotMemberException()
+
+    task.assignee_id = assignee_in.assignee_id
+    task.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(task)
 
     return build_task_response(task)
 

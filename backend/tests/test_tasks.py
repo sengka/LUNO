@@ -666,3 +666,135 @@ def test_get_task_detail(client: TestClient, db_session: Session):
     res_403 = client.get(f"/api/v1/tasks/{task.id}", headers=out_headers)
     assert res_403.status_code == 403
     assert res_403.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+
+# ============================================================================
+# US-012 (Issue #152) - Görev atama API'si Testleri
+# ============================================================================
+
+def test_admin_assigns_task_to_member_successfully(client: TestClient, db_session: Session):
+    """FR-030: Yönetici görevi proje üyesine atayabilir."""
+    admin_data = create_user(client, "Admin US12-1", "admin_us12_1@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    member_data = create_user(client, "Uye US12-1", "member_us12_1@luno.com")
+    add_member_to_project(db_session, project.id, member_data["id"])
+
+    task = Task(project_id=project.id, title="Atama Görevi", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_us12_1@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    payload = {"assignee_id": member_data["id"], "confirm_over_capacity": False}
+    res = client.patch(f"/api/v1/tasks/{task.id}/assignee", json=payload, headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["assignee"]["id"] == member_data["id"]
+
+    db_session.refresh(task)
+    assert task.assignee_id == member_data["id"]
+
+
+def test_admin_unassigns_task_successfully(client: TestClient, db_session: Session):
+    """Sözleşme 6.6: assignee_id: null gönderilerek görev ataması kaldırılabilir."""
+    admin_data = create_user(client, "Admin US12-2", "admin_us12_2@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    member_data = create_user(client, "Uye US12-2", "member_us12_2@luno.com")
+    add_member_to_project(db_session, project.id, member_data["id"])
+
+    task = Task(project_id=project.id, title="Atanmış Görev", status=TaskStatus.TODO, assignee_id=member_data["id"])
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_us12_2@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch(f"/api/v1/tasks/{task.id}/assignee", json={"assignee_id": None}, headers=headers)
+    assert res.status_code == 200
+    assert res.json()["assignee"] is None
+
+    db_session.refresh(task)
+    assert task.assignee_id is None
+
+
+def test_assignee_not_member_returns_400(client: TestClient, db_session: Session):
+    """Sözleşme 6.6: Atanan kişi projenin üyesi değilse 400 ASSIGNEE_NOT_MEMBER."""
+    admin_data = create_user(client, "Admin US12-3", "admin_us12_3@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    outsider = create_user(client, "Dış Kişi US12", "disari_us12@luno.com")
+
+    task = Task(project_id=project.id, title="Görev", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_us12_3@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch(f"/api/v1/tasks/{task.id}/assignee", json={"assignee_id": outsider["id"]}, headers=headers)
+    assert res.status_code == 400
+    assert res.json()["error"]["code"] == "ASSIGNEE_NOT_MEMBER"
+
+
+def test_member_cannot_assign_task_forbidden(client: TestClient, db_session: Session):
+    """FR-012: Ekip üyesi görev atayamaz (403 FORBIDDEN)."""
+    admin_data = create_user(client, "Admin US12-4", "admin_us12_4@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    member_data = create_user(client, "Uye US12-4", "member_us12_4@luno.com")
+    add_member_to_project(db_session, project.id, member_data["id"])
+
+    task = Task(project_id=project.id, title="Görev", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "member_us12_4@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch(f"/api/v1/tasks/{task.id}/assignee", json={"assignee_id": member_data["id"]}, headers=headers)
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "FORBIDDEN"
+
+
+def test_non_member_cannot_assign_task(client: TestClient, db_session: Session):
+    """FR-013: Proje üyesi olmayan yönetici 403 PROJECT_ACCESS_DENIED alır."""
+    owner_data = create_user(client, "Owner US12-5", "owner_us12_5@luno.com")
+    promote_to_admin(db_session, owner_data["id"])
+    project = create_project(db_session, owner_data["id"])
+
+    other_admin = create_user(client, "Other Admin US12-5", "other_admin_us12_5@luno.com")
+    promote_to_admin(db_session, other_admin["id"])
+
+    task = Task(project_id=project.id, title="Görev", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "other_admin_us12_5@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch(f"/api/v1/tasks/{task.id}/assignee", json={"assignee_id": owner_data["id"]}, headers=headers)
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+
+def test_assign_task_not_found(client: TestClient, db_session: Session):
+    admin_data = create_user(client, "Admin US12-6", "admin_us12_6@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    token = get_token(client, "admin_us12_6@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.patch("/api/v1/tasks/99999/assignee", json={"assignee_id": admin_data["id"]}, headers=headers)
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "TASK_NOT_FOUND"

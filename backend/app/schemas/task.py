@@ -24,6 +24,12 @@ class TaskStatusUpdateRequest(BaseModel):
     )
 
 
+class TaskAssigneeUpdateRequest(BaseModel):
+    """PATCH /tasks/{id}/assignee istek gövdesi (US-012 / 6.6)."""
+    assignee_id: Optional[int] = Field(None, description="Atanan kullanıcının id'si")
+    confirm_over_capacity: bool = False
+
+
 class TaskCreateRequest(BaseModel):
     """Sözleşme 6.2 (görev oluştur) ve 6.10 (alt görev ekle) istek gövdesi.
 
