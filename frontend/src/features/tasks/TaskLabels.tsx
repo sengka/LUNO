@@ -13,6 +13,11 @@ import { applyApiErrors } from '@/lib/form-errors'
 import { taskKeys, tasksApi } from './api'
 import type { CreateLabelInput, Label, Task } from './types'
 
+interface CreateLabelForm {
+  name: string
+  color: string
+}
+
 export function TaskLabels({ task }: { task: Task }) {
   const { isAdmin } = useAuth()
   const client = useQueryClient()
@@ -20,7 +25,7 @@ export function TaskLabels({ task }: { task: Task }) {
   const [attachError, setAttachError] = useState<string | null>(null)
   const creating = useRef(false)
   const attaching = useRef(false)
-  const createForm = useForm<CreateLabelInput>({ defaultValues: { name: '', color: '' } })
+  const createForm = useForm<CreateLabelForm>({ defaultValues: { name: '', color: '' } })
   const attachForm = useForm<{ label_ids: string }>({ defaultValues: { label_ids: '' } })
   const labels = useQuery({ queryKey: taskKeys.labels(task.project_id), queryFn: () => tasksApi.listLabels(task.project_id), retry: false })
   const available = (labels.data ?? []).filter((label) => !task.labels.some((assigned) => assigned.id === label.id))
@@ -69,11 +74,11 @@ export function TaskLabels({ task }: { task: Task }) {
     },
     onSettled: () => { attaching.current = false },
   })
-  const create = (input: CreateLabelInput) => {
+  const create = (input: CreateLabelForm) => {
     if (creating.current) return
     creating.current = true
     setCreateError(null)
-    creation.mutate({ name: input.name.trim(), color: input.color.trim() })
+    creation.mutate({ name: input.name.trim(), ...(input.color ? { color: input.color } : {}) })
   }
   const attach = ({ label_ids }: { label_ids: string }) => {
     if (attaching.current || !isAdmin) return
@@ -121,11 +126,16 @@ export function TaskLabels({ task }: { task: Task }) {
         <fieldset disabled={creation.isPending} className="grid gap-3">
           <FormField id="label-name" label="Etiket adı" error={createForm.formState.errors.name?.message}>
             <Input id="label-name" aria-invalid={!!createForm.formState.errors.name} aria-describedby={createForm.formState.errors.name ? 'label-name-error' : undefined}
-              {...createForm.register('name', { validate: (value) => !!value.trim() || 'Etiket adı girin.' })} />
+              {...createForm.register('name', {
+                validate: (value) => !!value.trim() || 'Etiket adı boş olamaz.',
+                maxLength: { value: 50, message: 'Etiket adı en fazla 50 karakter olabilir.' },
+              })} />
           </FormField>
-          <FormField id="label-color" label="Renk" hint="Örnek: #3A4CA0" error={createForm.formState.errors.color?.message}>
+          <FormField id="label-color" label="Renk" hint="Örnek: #3A4CA0. Boş bırakırsanız varsayılan renk kullanılır." error={createForm.formState.errors.color?.message}>
             <Input id="label-color" placeholder="#3A4CA0" aria-invalid={!!createForm.formState.errors.color} aria-describedby={createForm.formState.errors.color ? 'label-color-error' : undefined}
-              {...createForm.register('color', { validate: (value) => !!value.trim() || 'Etiket rengi girin.' })} />
+              {...createForm.register('color', {
+                validate: (value) => value === '' || /^#[0-9A-Fa-f]{6}$/.test(value) || 'Renk #RRGGBB biçiminde olmalıdır (örnek: #3A4CA0).',
+              })} />
           </FormField>
         </fieldset>
         {createError && <Alert variant="destructive" role="alert"><AlertDescription>{createError}</AlertDescription></Alert>}

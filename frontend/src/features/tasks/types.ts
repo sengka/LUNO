@@ -13,7 +13,7 @@ export interface Label {
 }
 export interface CreateLabelInput {
   name: string
-  color: string
+  color?: string
 }
 // 6.10: yalnızca zorunlu başlığı gönder; diğer alanlar ve parent_id sunucuya bırakılır.
 export interface CreateSubtaskInput {
