@@ -1167,3 +1167,40 @@ def test_priority_and_story_points_on_update(client: TestClient, db_session: Ses
     )
     assert res_invalid_prio.status_code == 422
     assert res_invalid_prio.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+# ============================================================================
+# HATA #186 - Görev düzenlemede title null gönderildiğinde doğrulama
+# ============================================================================
+
+def test_update_task_null_or_blank_title_rejected(client: TestClient, db_session: Session):
+    """HATA #186: PATCH /tasks/{id} title null veya boş gönderilirse 422 VALIDATION_ERROR dönmeli."""
+    admin_data = create_user(client, "Admin BUG186", "admin_bug186@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    task = Task(project_id=project.id, title="Orijinal Başlık", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_bug186@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. title: null gönderildiğinde 500 değil, 422 dönmeli
+    res_null = client.patch(f"/api/v1/tasks/{task.id}", json={"title": None}, headers=headers)
+    assert res_null.status_code == 422
+    data_null = res_null.json()
+    assert data_null["error"]["code"] == "VALIDATION_ERROR"
+    assert data_null["error"]["message"] == "Lütfen hatalı alanları düzeltin."
+    assert data_null["error"]["fields"]["title"] == "Görev başlığı zorunludur."
+
+    # 2. title: "   " gönderildiğinde 422 dönmeli
+    res_blank = client.patch(f"/api/v1/tasks/{task.id}", json={"title": "   "}, headers=headers)
+    assert res_blank.status_code == 422
+    assert res_blank.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert res_blank.json()["error"]["fields"]["title"] == "Görev başlığı zorunludur."
+
+    # 3. Veritabanındaki başlık değişmemiş olmalı
+    db_session.refresh(task)
+    assert task.title == "Orijinal Başlık"

@@ -332,6 +332,14 @@ def update_task(
 
     update_data = task_in.model_dump(exclude_unset=True)
 
+    if "title" in update_data and (update_data["title"] is None or not str(update_data["title"]).strip()):
+        raise CustomAPIException(
+            status_code=422,
+            code="VALIDATION_ERROR",
+            message="Lütfen hatalı alanları düzeltin.",
+            fields={"title": "Görev başlığı zorunludur."},
+        )
+
     # Tarih kontrolü (FR-025, FR-031)
     new_start = update_data.get("start_date", task.start_date)
     new_due = update_data.get("due_date", task.due_date)

@@ -77,10 +77,11 @@ class TaskUpdateRequest(BaseModel):
     @field_validator("title")
     @classmethod
     def strip_title(cls, value: Optional[str]) -> Optional[str]:
-        if value is not None:
-            value = value.strip()
-            if len(value) < 2:
-                raise ValueError("Görev başlığı zorunludur.")
+        if value is None:
+            raise ValueError("Görev başlığı zorunludur.")
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("Görev başlığı zorunludur.")
         return value
 
     @field_validator("story_points")
