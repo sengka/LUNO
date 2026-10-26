@@ -1,0 +1,535 @@
+{
+  "generated_at": "2026-10-24T21:05:38.920421+00:00",
+  "base_commit": "3237fc8b5c69cfb580404a90ff2e8f0877aa1aad",
+  "environment": "FastAPI TestClient; isolated in-memory SQLite; SQL fixture; real JWT dependency",
+  "records": [
+    {
+      "actor": "assignee",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "IN_PROGRESS"
+      },
+      "http_status": 200,
+      "response": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "IN_PROGRESS",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee": {
+          "id": 2,
+          "full_name": "assignee",
+          "avatar_url": null
+        },
+        "created_by": {
+          "id": 1,
+          "full_name": "admin",
+          "avatar_url": null
+        },
+        "sprint_id": null,
+        "labels": [],
+        "subtask_count": 0,
+        "subtask_done_count": 0,
+        "depends_on": [],
+        "risk_level": null,
+        "comment_count": 0,
+        "file_count": 0,
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-10-24T21:05:38Z"
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-01-02 00:00:00"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "IN_PROGRESS",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.882423"
+      }
+    },
+    {
+      "actor": "assignee",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "REVIEW_TESTING"
+      },
+      "http_status": 200,
+      "response": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "REVIEW_TESTING",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee": {
+          "id": 2,
+          "full_name": "assignee",
+          "avatar_url": null
+        },
+        "created_by": {
+          "id": 1,
+          "full_name": "admin",
+          "avatar_url": null
+        },
+        "sprint_id": null,
+        "labels": [],
+        "subtask_count": 0,
+        "subtask_done_count": 0,
+        "depends_on": [],
+        "risk_level": null,
+        "comment_count": 0,
+        "file_count": 0,
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-10-24T21:05:38Z"
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "IN_PROGRESS",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.882423"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "REVIEW_TESTING",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.889423"
+      }
+    },
+    {
+      "actor": "assignee",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "DONE"
+      },
+      "http_status": 200,
+      "response": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "DONE",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee": {
+          "id": 2,
+          "full_name": "assignee",
+          "avatar_url": null
+        },
+        "created_by": {
+          "id": 1,
+          "full_name": "admin",
+          "avatar_url": null
+        },
+        "sprint_id": null,
+        "labels": [],
+        "subtask_count": 0,
+        "subtask_done_count": 0,
+        "depends_on": [],
+        "risk_level": null,
+        "comment_count": 0,
+        "file_count": 0,
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-10-24T21:05:38Z"
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "REVIEW_TESTING",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.889423"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "DONE",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.894424"
+      }
+    },
+    {
+      "actor": "assignee",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "TODO"
+      },
+      "http_status": 200,
+      "response": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee": {
+          "id": 2,
+          "full_name": "assignee",
+          "avatar_url": null
+        },
+        "created_by": {
+          "id": 1,
+          "full_name": "admin",
+          "avatar_url": null
+        },
+        "sprint_id": null,
+        "labels": [],
+        "subtask_count": 0,
+        "subtask_done_count": 0,
+        "depends_on": [],
+        "risk_level": null,
+        "comment_count": 0,
+        "file_count": 0,
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-10-24T21:05:38Z"
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "DONE",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.894424"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.899424"
+      }
+    },
+    {
+      "actor": "colleague",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "DONE"
+      },
+      "http_status": 403,
+      "response": {
+        "error": {
+          "code": "NOT_TASK_ASSIGNEE",
+          "message": "Size atanmamış bir görevin durumunu değiştiremezsiniz.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.899424"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.899424"
+      }
+    },
+    {
+      "actor": "external_admin",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "DONE"
+      },
+      "http_status": 403,
+      "response": {
+        "error": {
+          "code": "NOT_TASK_ASSIGNEE",
+          "message": "Size atanmamış bir görevin durumunu değiştiremezsiniz.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.899424"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.899424"
+      }
+    },
+    {
+      "actor": "admin",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "DONE"
+      },
+      "http_status": 200,
+      "response": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "DONE",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee": {
+          "id": 2,
+          "full_name": "assignee",
+          "avatar_url": null
+        },
+        "created_by": {
+          "id": 1,
+          "full_name": "admin",
+          "avatar_url": null
+        },
+        "sprint_id": null,
+        "labels": [],
+        "subtask_count": 0,
+        "subtask_done_count": 0,
+        "depends_on": [],
+        "risk_level": null,
+        "comment_count": 0,
+        "file_count": 0,
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-10-24T21:05:38Z"
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "TODO",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.899424"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "DONE",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.913423"
+      }
+    },
+    {
+      "actor": "admin",
+      "method": "PATCH",
+      "path": "/api/v1/tasks/1/status",
+      "request": {
+        "status": "IN_PROGRESS"
+      },
+      "http_status": 400,
+      "response": {
+        "error": {
+          "code": "TASK_NOT_ACTIVE",
+          "message": "Onay bekleyen veya reddedilen görevin durumu değiştirilemez.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "before": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "ONAY_BEKLIYOR",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.916421"
+      },
+      "after": {
+        "id": 1,
+        "project_id": 1,
+        "parent_id": null,
+        "title": "Status regression",
+        "description": "Preserve me",
+        "status": "ONAY_BEKLIYOR",
+        "priority": "YUKSEK",
+        "story_points": 5,
+        "start_date": "2026-10-02",
+        "due_date": "2026-10-30",
+        "assignee_id": 2,
+        "created_by_id": 1,
+        "sprint_id": null,
+        "created_at": "2026-01-01 00:00:00",
+        "updated_at": "2026-10-24 21:05:38.916421"
+      }
+    }
+  ]
+}
