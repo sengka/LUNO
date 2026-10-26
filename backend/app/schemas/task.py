@@ -24,6 +24,12 @@ class TaskStatusUpdateRequest(BaseModel):
     )
 
 
+class TaskAssigneeUpdateRequest(BaseModel):
+    """PATCH /tasks/{id}/assignee istek gövdesi (US-012 / 6.6)."""
+    assignee_id: Optional[int] = Field(None, description="Atanan kullanıcının id'si")
+    confirm_over_capacity: bool = False
+
+
 class TaskCreateRequest(BaseModel):
     """Sözleşme 6.2 (görev oluştur) ve 6.10 (alt görev ekle) istek gövdesi.
 
@@ -47,6 +53,34 @@ class TaskCreateRequest(BaseModel):
         value = value.strip()
         if len(value) < 2:
             raise ValueError("Görev başlığı zorunludur.")
+        return value
+
+    @field_validator("story_points")
+    @classmethod
+    def check_story_points(cls, value: Optional[int]) -> Optional[int]:
+        if value is not None and value not in STORY_POINT_VALUES:
+            raise ValueError("Efor puanı 1, 2, 3, 5, 8 veya 13 olmalıdır.")
+        return value
+
+
+class TaskUpdateRequest(BaseModel):
+    """PATCH /tasks/{id} istek gövdesi (US-013, US-032 / 6.4)."""
+    title: Optional[str] = Field(None, min_length=2, max_length=200, description="Görev başlığı (2-200 karakter)")
+    description: Optional[str] = None
+    start_date: Optional[date] = None
+    due_date: Optional[date] = None
+    priority: Optional[Priority] = None
+    story_points: Optional[int] = Field(None, description="Yalnızca 1, 2, 3, 5, 8, 13 (FR-036)")
+    label_ids: Optional[List[int]] = None
+    sprint_id: Optional[int] = None
+
+    @field_validator("title")
+    @classmethod
+    def strip_title(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None:
+            value = value.strip()
+            if len(value) < 2:
+                raise ValueError("Görev başlığı zorunludur.")
         return value
 
     @field_validator("story_points")
@@ -99,3 +133,22 @@ class TaskResponse(BaseModel):
     @field_serializer("updated_at")
     def serialize_updated_at(self, dt: datetime, _info):
         return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+class TaskListResponse(BaseModel):
+    """Sözleşme 1.6 & 6.1: Sayfalı görev listesi yanıtı."""
+    items: List[TaskResponse]
+    total: int
+    page: int
+    limit: int
+
+
+class BoardColumn(BaseModel):
+    """Sözleşme 7.1: Kanban sütunu."""
+    status: str
+    tasks: List[TaskResponse]
+
+
+class BoardResponse(BaseModel):
+    """Sözleşme 7.1: Kanban panosu yanıtı."""
+    columns: List[BoardColumn]
