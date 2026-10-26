@@ -168,3 +168,27 @@ class CalendarEvent(BaseModel):
 class CalendarResponse(BaseModel):
     """Sözleşme 7.2: Takvim yanıtı."""
     events: List[CalendarEvent]
+
+
+class GanttProjectSummary(BaseModel):
+    """Sözleşme 7.3: Gantt proje tarihleri."""
+    start_date: date
+    end_date: date
+
+
+class GanttItem(BaseModel):
+    """Sözleşme 7.3: Gantt görev öğesi."""
+    task_id: int
+    title: str
+    start_date: date
+    due_date: date
+    progress_percent: float
+    status: str
+    parent_id: Optional[int] = None
+    depends_on: List[int] = Field(default_factory=list)
+
+
+class GanttResponse(BaseModel):
+    """Sözleşme 7.3: Gantt şeması yanıtı."""
+    project: GanttProjectSummary
+    items: List[GanttItem]

@@ -23,6 +23,9 @@ from app.schemas.task import (
     BoardResponse,
     CalendarEvent,
     CalendarResponse,
+    GanttProjectSummary,
+    GanttItem,
+    GanttResponse,
 )
 from app.services.tasks import create_task
 from app.schemas.project import UserSummary
@@ -343,6 +346,89 @@ def get_project_calendar(
     ]
 
     return CalendarResponse(events=events)
+
+
+@router.get(
+    "/projects/{project_id}/gantt",
+    response_model=GanttResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Gantt şeması (US-017 / 7.3)",
+)
+def get_project_gantt(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Proje Gantt şeması verilerini döner (US-017, FR-045, sözleşme 7.3).
+    Erişim: Proje üyesi (FR-013).
+    - Proje yoksa 404 PROJECT_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Yalnızca başlangıç ve teslim tarihi olan aktif görevler (TODO, IN_PROGRESS, REVIEW_TESTING, DONE) döner.
+    - Alt görevler de döner.
+    - progress_percent: Alt görevi varsa tamamlanan alt görev oranı; yoksa DONE ise 100.0, değilse 0.0.
+    - depends_on: Sprint 9'a kadar boş liste [].
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    active_statuses = [
+        TaskStatus.TODO,
+        TaskStatus.IN_PROGRESS,
+        TaskStatus.REVIEW_TESTING,
+        TaskStatus.DONE,
+    ]
+
+    tasks = (
+        db.query(Task)
+        .filter(
+            Task.project_id == project_id,
+            Task.status.in_(active_statuses),
+            Task.start_date.isnot(None),
+            Task.due_date.isnot(None),
+        )
+        .order_by(Task.start_date.asc(), Task.due_date.asc(), Task.id.asc())
+        .all()
+    )
+
+    items = []
+    for t in tasks:
+        subtasks = t.subtasks or []
+        if subtasks:
+            done_count = sum(1 for st in subtasks if st.status == TaskStatus.DONE)
+            progress = round((done_count / len(subtasks)) * 100, 1)
+        else:
+            progress = 100.0 if t.status == TaskStatus.DONE else 0.0
+
+        items.append(
+            GanttItem(
+                task_id=t.id,
+                title=t.title,
+                start_date=t.start_date,
+                due_date=t.due_date,
+                progress_percent=progress,
+                status=t.status.value,
+                parent_id=t.parent_id,
+                depends_on=[],
+            )
+        )
+
+    return GanttResponse(
+        project=GanttProjectSummary(
+            start_date=project.start_date,
+            end_date=project.end_date,
+        ),
+        items=items,
+    )
 
 
 @router.get(
