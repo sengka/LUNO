@@ -13,13 +13,8 @@ import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskEditForm } from './TaskEditForm'
 import { TaskLabels } from './TaskLabels'
 import { TaskSubtasks } from './TaskSubtasks'
-import type { TaskStatus } from './types'
+import { TaskAssigneeField, TaskStatusField } from './TaskDetailFields'
 import { PRIORITY_LABELS } from './types'
-
-const statuses: Record<TaskStatus, string> = {
-  TODO: 'Yapılacak', IN_PROGRESS: 'Devam ediyor', REVIEW_TESTING: 'İnceleme / Test',
-  DONE: 'Tamamlandı', ONAY_BEKLIYOR: 'Onay bekliyor', REDDEDILDI: 'Reddedildi',
-}
 
 function formatDate(value: string | null, timestamp = false) {
   if (!value) return 'Belirtilmedi'
@@ -83,8 +78,9 @@ function TaskDetailContent() {
               <aside className="border-t pt-6 md:border-t-0 md:border-l md:pt-0 md:pl-6" aria-label="Görev bilgileri">
                 <h2 className="mb-6 text-lg font-semibold text-primary">Görev bilgileri</h2>
                 <dl className="grid gap-6 text-sm">
+                  <TaskStatusField task={task} />
+                  <TaskAssigneeField task={task} />
                   {[
-                    ['Durum', statuses[task.status]], ['Sorumlu', task.assignee?.full_name ?? 'Atanmamış'],
                     ['Başlangıç tarihi', formatDate(task.start_date)], ['Teslim tarihi', formatDate(task.due_date)],
                   ].map(([label, value]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd className="mt-2 break-words rounded-xl border p-3">{value}</dd></div>)}
                   <div>
