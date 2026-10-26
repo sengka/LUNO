@@ -62,6 +62,7 @@ export interface UpdateTaskInput {
   label_ids?: number[]
 }
 
+
 // Kanban ve durum seçiminde kullanılan aktif durumlar (sözleşme 1.3, 6.5)
 export type ActiveTaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW_TESTING' | 'DONE'
 export const BOARD_STATUSES: ActiveTaskStatus[] = ['TODO', 'IN_PROGRESS', 'REVIEW_TESTING', 'DONE']
@@ -91,3 +92,4 @@ export interface BoardColumn {
 export interface BoardResponse {
   columns: BoardColumn[]
 }
+

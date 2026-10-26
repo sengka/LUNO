@@ -1,5 +1,6 @@
 import { api } from '@/lib/api'
 import type { Paginated } from '@/types/api'
+
 import type {
   ActiveTaskStatus,
   BoardResponse,
@@ -11,11 +12,13 @@ import type {
   UpdateTaskInput,
 } from './types'
 
+
 export const taskKeys = {
   all: ['tasks'] as const,
   detail: (id: number) => ['tasks', 'detail', id] as const,
   subtasks: (id: number, page: number) => ['tasks', 'subtasks', id, page] as const,
   labels: (projectId: number) => ['projects', 'labels', projectId] as const,
+
   board: (projectId: number) => ['tasks', 'board', projectId] as const,
 }
 
@@ -25,6 +28,7 @@ export const tasksApi = {
   updateStatus: (id: number, status: ActiveTaskStatus) => api.patch<Task>(`/tasks/${id}/status`, { status }),
   updateAssignee: (id: number, assigneeId: number | null) =>
     api.patch<Task>(`/tasks/${id}/assignee`, { assignee_id: assigneeId, confirm_over_capacity: false }),
+
   getDetail: (id: number) => api.get<Task>(`/tasks/${id}`),
   update: (id: number, input: UpdateTaskInput) => api.patch<Task>(`/tasks/${id}`, input),
   remove: (id: number) => api.delete<void>(`/tasks/${id}`),
