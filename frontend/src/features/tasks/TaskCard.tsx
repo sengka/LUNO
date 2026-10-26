@@ -28,6 +28,8 @@ function isOverdue(task: Task) {
 export function TaskCard({ task, dragging = false }: { task: Task; dragging?: boolean }) {
   const label = task.labels[0]
   const done = task.status === 'DONE'
+  const progress = task.subtask_count > 0
+    ? Math.min(100, Math.max(0, task.subtask_done_count / task.subtask_count * 100)) : 0
 
   return (
     <Link
@@ -74,6 +76,14 @@ export function TaskCard({ task, dragging = false }: { task: Task; dragging?: bo
           {PRIORITY_LABELS[task.priority]}
         </span>
       )}
+
+      {task.subtask_count > 0 && <div className="grid gap-1.5">
+        <span className="text-xs text-muted-foreground">{task.subtask_done_count}/{task.subtask_count} alt görev tamamlandı</span>
+        <div role="progressbar" aria-label="Alt görev ilerlemesi" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}
+          className="h-1.5 overflow-hidden rounded-full bg-secondary">
+          <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+        </div>
+      </div>}
 
       <div className="flex items-center justify-between gap-2">
         {task.assignee ? (

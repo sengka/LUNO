@@ -16,7 +16,9 @@ function useTaskUpdated(task: Task) {
   return (updated: Task) => {
     queryClient.setQueryData(taskKeys.detail(task.id), updated)
     // Kanban ve proje ilerlemesi de güncel kalsın
-    void queryClient.invalidateQueries({ queryKey: taskKeys.board(task.project_id) })
+    void queryClient.invalidateQueries({ queryKey: taskKeys.all, predicate: (query) =>
+      !(query.queryKey[1] === 'detail' && query.queryKey[2] === updated.id),
+    })
     void queryClient.invalidateQueries({ queryKey: ['projects'] })
   }
 }

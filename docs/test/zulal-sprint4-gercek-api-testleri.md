@@ -36,7 +36,7 @@ Tarih: 26 Ekim 2026. Branch: `zulal`. `origin/develop` (`976f5ea`, #185 birleşi
 
 Testte oluşturulan iki ana görev ve iki alt görev silindi. İlk akışta id'ler 20, 21 ve 22 idi; ikinci akışta SQLite ana görev için id 20'yi yeniden kullandı. Önceden var olan görevler değiştirilmedi/silinmedi. Proje 1 içinde `API test 898dc6d1` (id 1) ve `API test color 898dc6d1` (id 2) etiketleri kaldı; etiket silme endpoint'i bulunmadığından doğrudan veritabanı müdahalesi yapılmadı. `can@ornek.com` ile giriş 401 verdi; üye olmayan erişimi Sena'nın proje 2 göreviyle test edildi.
 
-## Tarayıcıda bekleyen doğrulamalar
+## İlk API çalışmasından sonra tarayıcıda bekleyen doğrulamalar
 
 - Görev detayını açma ve sayfayı yenileme; düzenleme, öncelik/efor ve etiket sonuçlarının yenilemeden sonra görünmesi.
 - Başlık/tarih/etiket alan hatalarının Türkçe ve ilgili alan altında görünmesi.
@@ -46,7 +46,7 @@ Testte oluşturulan iki ana görev ve iki alt görev silindi. İlk akışta id'l
 
 API'den tekrar GET yapılması, tarayıcı yenilemesi veya silme iptal/onay akışının doğrulandığı anlamına gelmez. İncelenen frontend kodunda somut hata doğrulanmadığından frontend kaynak değişikliği yapılmadı. Test edilen API akışlarında backend hatası görülmedi; backend kaynakları ve LUNO-api-test değiştirilmedi, seed/reset çalıştırılmadı.
 
-## Entegrasyon ve kontroller
+## İlk API çalışması sırasındaki entegrasyon ve kontroller
 
 - [#185](https://github.com/sengka/LUNO/pull/185) develop'a birleşmiş durumda.
 - [#187](https://github.com/sengka/LUNO/pull/187) kontrol anında **açık, merged=false**, hedefi develop. Sefa branch'i birleştirilmedi. Görev oluşturma formunda öncelik/efor ile Kanban rozetleri/alt görev ilerlemesi entegrasyonu bekliyor.
@@ -54,3 +54,26 @@ API'den tekrar GET yapılması, tarayıcı yenilemesi veya silme iptal/onay akı
 - `npm run lint`: başarılı; badge, button ve tabs dosyalarında mevcut üç Fast Refresh uyarısı var.
 - `git diff --check`: başarılı.
 - PR taslak durumu ve görevlerin açık durumu değiştirilmedi.
+
+## Güncel entegrasyon ve kullanıcı tarafından yapılan manuel kontroller
+
+26 Ekim 2026: #178 ve #187 develop'a birleşti. Yerel `zulal`, `origin/develop` (`6c2bbae`) seviyesine fast-forward ile güncellendi. Kanban'ın görünmemesinin nedeni, doğru LUNO klasöründen çalışan Vite'ın henüz #187'yi içermeyen eski yerel kodu sunmasıydı.
+
+Bu teslimde görev oluşturma formuna Düşük/Orta/Yüksek öncelik ve 1, 2, 3, 5, 8, 13 efor seçimleri eklendi. Seçilmemiş alanlar istekten çıkarılıyor. #187 ile gelen öncelik/efor rozetleri korundu; Kanban kartlarına tamamlanan/toplam alt görev sayısı ve ilerleme çubuğu eklendi. Oluşturulan görevin detayı önbelleğe yazılıyor; durum/sorumlu değişikliklerinde ilgili görev detayları, alt görev listeleri, Kanban ve proje verileri yenileniyor.
+
+Aşağıdaki kontrolleri **kullanıcı kendi yerel tarayıcısında** yaptı ve sonuçlarını bildirdi. Bunlar ajan tarafından yürütülen tarayıcı testleri değildir; önceki kanıt dosyasındaki **62 API isteğinin sayısı değişmemiştir**.
+
+| Kullanıcının manuel kontrolü | Bildirilen sonuç |
+| --- | --- |
+| Proje 1 Kanban | Dört sütun görünüyor |
+| Görev #1 kartı | Orta öncelik, 8 efor, Arayüz Testi etiketi ve 1/3 alt görev ilerlemesi göründü |
+| Oluşturma formu | “Geçici entegrasyon testi” Yüksek öncelik ve 5 efor ile oluşturuldu; değerler detayda ve kartta doğru göründü |
+| Alt görev ekleme | Geçici görevin kartı 0/1 gösterdi |
+| Alt görevi Done yapma | Kart 1/1 ve dolu ilerleme çubuğuna güncellendi |
+| Mehmet hesabıyla geçici görev | Düzenle/Sil görünmedi; durum ve sorumlu alanları değiştirilemiyordu |
+| Sena ile silmeyi iptal etme | Geçici görev kaldı |
+| Sena ile silmeyi onaylama | Geçici ana görev kaldırıldı |
+
+Bu manuel silme kontrolü, alt görevin kaskad silindiğini ayrıca doğrulamaz. Silme sonrası yönlendirme, sayfa yenilemesiyle kalıcılık, alan hatalarının görünümü ve iç içe alt görev engelinin tarayıcıdaki davranışı bu kullanıcı bildirimi kapsamında doğrulanmış sayılmamıştır. Önceki API sonuçları kendi kapsamıyla geçerlidir.
+
+Son kod değişikliklerinden sonra `npm run build`, `npm run lint` ve `git diff --check` başarılı oldu. Build'de mevcut paket boyutu uyarısı, lint'te button/badge/tabs bileşenlerindeki üç Fast Refresh uyarısı sürüyor. Bu teslim hazırlığında kod değiştirilmedi; yalnızca bu rapor güncellendi ve diff kontrolü tekrarlandı. Güncel origin/develop ile uyum kontrol edildi. Veritabanına müdahale edilmedi; LUNO-api-test değiştirilmedi.
