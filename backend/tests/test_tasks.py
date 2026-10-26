@@ -1204,3 +1204,162 @@ def test_update_task_null_or_blank_title_rejected(client: TestClient, db_session
     # 3. Veritabanındaki başlık değişmemiş olmalı
     db_session.refresh(task)
     assert task.title == "Orijinal Başlık"
+
+
+# ============================================================================
+# US-016 - Takvim API'si (Sözleşme 7.2)
+# ============================================================================
+
+def test_calendar_success(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Tarih aralığındaki aktif görevler takvimde döner."""
+    from datetime import date
+    owner = create_user(client, "Cal Owner", "cal_owner@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    member = create_user(client, "Cal Member", "cal_member@luno.com")
+    add_member_to_project(db_session, project.id, member["id"])
+
+    # Görev 1: Aralıkta, atanan var, IN_PROGRESS
+    t1 = Task(
+        project_id=project.id,
+        title="Giriş ekranı",
+        start_date=date(2026, 10, 6),
+        due_date=date(2026, 10, 10),
+        status=TaskStatus.IN_PROGRESS,
+        assignee_id=member["id"],
+    )
+    # Görev 2: Başlangıç tarihi aralıkta, TODO
+    t2 = Task(
+        project_id=project.id,
+        title="Veritabanı tasarımı",
+        start_date=date(2026, 10, 15),
+        due_date=date(2026, 11, 5),
+        status=TaskStatus.TODO,
+    )
+    # Görev 3: Aktif değil (ONAY_BEKLIYOR) -> Takvimde dönmemeli
+    t_pending = Task(
+        project_id=project.id,
+        title="Bekleyen görev",
+        start_date=date(2026, 10, 12),
+        due_date=date(2026, 10, 14),
+        status=TaskStatus.ONAY_BEKLIYOR,
+    )
+    # Görev 4: Tarih aralığı dışında (Aralık 2026) -> Takvimde dönmemeli
+    t_out = Task(
+        project_id=project.id,
+        title="Gelecek görev",
+        start_date=date(2026, 12, 1),
+        due_date=date(2026, 12, 10),
+        status=TaskStatus.TODO,
+    )
+    # Görev 5: Tarihleri None -> Takvimde dönmemeli
+    t_nodate = Task(
+        project_id=project.id,
+        title="Tarihsiz görev",
+        status=TaskStatus.TODO,
+    )
+    db_session.add_all([t1, t2, t_pending, t_out, t_nodate])
+    db_session.commit()
+
+    token = get_token(client, "cal_member@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-10-01&to=2026-10-31",
+        headers=headers,
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "events" in data
+    events = data["events"]
+    assert len(events) == 2
+
+    task_ids = [e["task_id"] for e in events]
+    assert t1.id in task_ids
+    assert t2.id in task_ids
+    assert t_pending.id not in task_ids
+    assert t_out.id not in task_ids
+    assert t_nodate.id not in task_ids
+
+    e1 = next(e for e in events if e["task_id"] == t1.id)
+    assert e1["title"] == "Giriş ekranı"
+    assert e1["start_date"] == "2026-10-06"
+    assert e1["due_date"] == "2026-10-10"
+    assert e1["status"] == "IN_PROGRESS"
+    assert e1["assignee"] is not None
+    assert e1["assignee"]["id"] == member["id"]
+    assert e1["assignee"]["full_name"] == "Cal Member"
+
+
+def test_calendar_invalid_range_to_before_from(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: to < from ise 400 INVALID_DATE_RANGE."""
+    owner = create_user(client, "Cal Owner 2", "cal_owner2@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    token = get_token(client, "cal_owner2@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-10-31&to=2026-10-01",
+        headers=headers,
+    )
+    assert res.status_code == 400
+    data = res.json()
+    assert data["error"]["code"] == "INVALID_DATE_RANGE"
+    assert "Bitiş tarihi başlangıç tarihinden önce olamaz" in data["error"]["message"]
+
+
+def test_calendar_range_exceeds_93_days(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Aralık 93 günden fazla ise 400 INVALID_DATE_RANGE."""
+    owner = create_user(client, "Cal Owner 3", "cal_owner3@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    token = get_token(client, "cal_owner3@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 100 günlük aralık
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-01-01&to=2026-04-20",
+        headers=headers,
+    )
+    assert res.status_code == 400
+    data = res.json()
+    assert data["error"]["code"] == "INVALID_DATE_RANGE"
+    assert "Tarih aralığı en fazla 93 gün olabilir" in data["error"]["message"]
+
+
+def test_calendar_non_member_forbidden(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Proje üyesi olmayan kullanıcı 403 PROJECT_ACCESS_DENIED alır."""
+    owner = create_user(client, "Cal Owner 4", "cal_owner4@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    stranger = create_user(client, "Cal Stranger", "cal_stranger@luno.com")
+
+    token = get_token(client, "cal_stranger@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-10-01&to=2026-10-31",
+        headers=headers,
+    )
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+
+def test_calendar_project_not_found(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Var olmayan proje 404 PROJECT_NOT_FOUND döner."""
+    user = create_user(client, "Cal User 5", "cal_user5@luno.com")
+    token = get_token(client, "cal_user5@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        "/api/v1/projects/999999/calendar?from=2026-10-01&to=2026-10-31",
+        headers=headers,
+    )
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+

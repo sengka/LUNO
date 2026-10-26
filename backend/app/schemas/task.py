@@ -153,3 +153,18 @@ class BoardColumn(BaseModel):
 class BoardResponse(BaseModel):
     """Sözleşme 7.1: Kanban panosu yanıtı."""
     columns: List[BoardColumn]
+
+
+class CalendarEvent(BaseModel):
+    """Sözleşme 7.2: Takvim etkinliği."""
+    task_id: int
+    title: str
+    start_date: Optional[date] = None
+    due_date: Optional[date] = None
+    status: str
+    assignee: Optional[UserSummary] = None
+
+
+class CalendarResponse(BaseModel):
+    """Sözleşme 7.2: Takvim yanıtı."""
+    events: List[CalendarEvent]
