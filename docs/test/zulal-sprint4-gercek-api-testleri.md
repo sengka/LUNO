@@ -34,7 +34,7 @@ Tarih: 26 Ekim 2026. Branch: `zulal`. `origin/develop` (`976f5ea`, #185 birleşi
 | Oturumsuz detay erişimi | GET 401 |
 | Yalnızca testte oluşturulan ana görevleri silme | DELETE 204; ana ve alt görevlerin sonraki GET istekleri 404 |
 
-Görevler 20–23 yalnızca bu testte oluşturuldu ve silindi. Önceden var olan görevler değiştirilmedi/silinmedi. Proje 1 içinde `API test 898dc6d1` (id 1) ve `API test color 898dc6d1` (id 2) etiketleri kaldı; etiket silme endpoint'i bulunmadığından doğrudan veritabanı müdahalesi yapılmadı. `can@ornek.com` ile giriş 401 verdi; üye olmayan erişimi Sena'nın proje 2 göreviyle test edildi.
+Testte oluşturulan iki ana görev ve iki alt görev silindi. İlk akışta id'ler 20, 21 ve 22 idi; ikinci akışta SQLite ana görev için id 20'yi yeniden kullandı. Önceden var olan görevler değiştirilmedi/silinmedi. Proje 1 içinde `API test 898dc6d1` (id 1) ve `API test color 898dc6d1` (id 2) etiketleri kaldı; etiket silme endpoint'i bulunmadığından doğrudan veritabanı müdahalesi yapılmadı. `can@ornek.com` ile giriş 401 verdi; üye olmayan erişimi Sena'nın proje 2 göreviyle test edildi.
 
 ## Tarayıcıda bekleyen doğrulamalar
 
