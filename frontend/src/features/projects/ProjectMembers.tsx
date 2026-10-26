@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { FormField } from '@/components/form/FormField'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,7 @@ export function ProjectMembers({ projectId }: Props) {
   const queryClient = useQueryClient()
   const [formError, setFormError] = useState<string | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
+  const [memberToRemove, setMemberToRemove] = useState<ProjectMember | null>(null)
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -50,6 +52,7 @@ export function ProjectMembers({ projectId }: Props) {
   const addMember = useMutation({
     mutationFn: (values: AddMemberInput) =>
       membersApi.add(projectId, values),
+    meta: { skipForbiddenToast: true },
     onSuccess: () => {
       form.reset()
       setFormError(null)
@@ -82,12 +85,15 @@ export function ProjectMembers({ projectId }: Props) {
   const removeMember = useMutation({
     mutationFn: (userId: number) =>
       membersApi.remove(projectId, userId),
+    meta: { skipForbiddenToast: true },
     onSuccess: () => {
       setRemoveError(null)
+      setMemberToRemove(null)
       refreshProject()
       toast.success('Üye projeden çıkarıldı.')
     },
     onError: (error) => {
+      setMemberToRemove(null)
       setRemoveError(
         error instanceof ApiError
           ? error.message
@@ -109,16 +115,8 @@ export function ProjectMembers({ projectId }: Props) {
 
   const confirmRemove = (member: ProjectMember) => {
     if (!isAdmin || removeMember.isPending) return
-
-    const confirmed = window.confirm(
-      `${member.user.full_name} adlı üyeyi projeden çıkarmak istiyor musun?\n\n` +
-        'Bu projede kendisine atanmış görevler atanmamış duruma geçecek.',
-    )
-
-    if (!confirmed) return
-
     setRemoveError(null)
-    removeMember.mutate(member.user.id)
+    setMemberToRemove(member)
   }
 
   const { errors } = form.formState
@@ -236,6 +234,25 @@ export function ProjectMembers({ projectId }: Props) {
           </div>
         )
       )}
+
+      <ConfirmDialog
+        open={memberToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setMemberToRemove(null)
+        }}
+        title="Üyeyi projeden çıkar"
+        description={
+          memberToRemove && (
+            <>
+              <strong>{memberToRemove.user.full_name}</strong> adlı üyeyi projeden çıkarmak istiyor musun? Bu
+              projede kendisine atanmış görevler atanmamış duruma geçecek.
+            </>
+          )
+        }
+        confirmLabel="Projeden çıkar"
+        pending={removeMember.isPending}
+        onConfirm={() => memberToRemove && removeMember.mutate(memberToRemove.user.id)}
+      />
 
       {removeError && (
         <Alert variant="destructive" role="alert">
