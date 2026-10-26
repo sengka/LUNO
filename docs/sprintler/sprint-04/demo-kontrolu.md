@@ -33,11 +33,7 @@ Tarayıcı konsolunda beklenen 403 yanıtı dışında hata görülmedi.
 
 ## Canlı ortam kontrolü
 
-Bu oturumdan Render adreslerine erişilemediği için canlı ortam, Sprint 4 kodu yayına alındıktan sonra elle denenecek:
-
-- [ ] Yönetici görev oluşturup bir üyeye atar
-- [ ] Ekip üyesi kendi görevini Kanban'da taşır
-- [ ] Ekip üyesi başkasının görevini taşımaya çalışınca kart geri döner ve uyarı çıkar
+Görev yerel sonuçlarla kapatıldı. Canlı ortamda proje listeleme 500 döndüğü için (bkz. [Sprint 3 demo kontrolü](../sprint-03/demo-kontrolu.md)) Kanban akışı canlıda denenemedi. Canlı ortam düzeltildikten sonra aynı üç adım canlıda tekrarlanmalıdır.
 
 ## Sonuç
 

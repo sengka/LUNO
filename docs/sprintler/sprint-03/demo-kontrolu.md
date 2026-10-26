@@ -49,16 +49,17 @@ Tarayıcı konsolunda hata görülmedi.
 
 ## Canlı ortam kontrolü
 
-Bu oturumdan Render adreslerine erişilemediği için canlı ortam elle denenecek. Kontrol listesi:
+Görev yerel sonuçlarla kapatıldı; canlı ortamda senaryo tamamlanamadı:
 
-- [ ] `https://luno-api-mu54.onrender.com/health` → `{"status":"ok"}`
-- [ ] `https://luno-frontend.onrender.com` açılıyor, kayıt ve giriş çalışıyor
-- [ ] Yönetici hesabıyla proje oluşturma ve davet bağlantısı üretme
-- [ ] Ekip üyesi hesabıyla daveti kabul etme; yalnızca kendi projelerini görme
-- [ ] Ekip üyesinde "Projeyi sil" butonunun görünmemesi
-
-Not: Canlı veritabanında seed çalıştırılmadığı için hesaplar canlı ortamda ayrıca oluşturulmalıdır.
+- `https://luno-frontend.onrender.com` açılıyor, yeni hesapla kayıt ve giriş çalışıyor.
+- Projeler sayfası "Beklenmeyen bir hata oluştu." gösteriyor: `GET /api/v1/projects` canlıda 500 dönüyor. Aynı kod yerelde ve CI'daki PostgreSQL testlerinde çalıştığı için sorunun canlı ortamın yapılandırmasında (veritabanı şeması veya yayındaki sürüm) olduğu düşünülüyor. Render logları incelenip canlı yayın görevi (#124) kapsamında hata raporu açılacak.
+- Canlı veritabanında seed çalıştırılmadığı ve ilk yönetici hesabını oluşturmanın uygulama içinden bir yolu olmadığı için yönetici hesabı veritabanında elle ayarlanmalıdır. Bu ayrı bir görev olarak önerildi.
 
 ## Sonuç
 
-Sprint 3 hedefi ("Yönetici proje oluşturup düzenleyebilsin, üye ekleyebilsin; yetkisiz işlemler engellensin") yerel ortamda karşılanıyor. Açık kalan tek bulgu #145: yetkisiz erişim engelleniyor, ancak FR-012'nin istediği uyarı mesajı yönetici sayfasında gösterilmiyor.
+Sprint 3 hedefi ("Yönetici proje oluşturup düzenleyebilsin, üye ekleyebilsin; yetkisiz işlemler engellensin") yerel ortamda karşılanıyor.
+
+Açık bulgular:
+
+- #145: Yetkisiz erişim engelleniyor, ancak FR-012'nin istediği uyarı mesajı yönetici sayfasında gösterilmiyor.
+- Canlı ortamda proje listeleme 500 dönüyor (yukarıdaki bölüm).
