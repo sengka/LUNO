@@ -61,3 +61,35 @@ export interface UpdateTaskInput {
   story_points?: StoryPoints
   label_ids?: number[]
 }
+
+
+// Kanban ve durum seçiminde kullanılan aktif durumlar (sözleşme 1.3, 6.5)
+export type ActiveTaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW_TESTING' | 'DONE'
+export const BOARD_STATUSES: ActiveTaskStatus[] = ['TODO', 'IN_PROGRESS', 'REVIEW_TESTING', 'DONE']
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  TODO: 'To Do',
+  IN_PROGRESS: 'In Progress',
+  REVIEW_TESTING: 'Review & Testing',
+  DONE: 'Done',
+  ONAY_BEKLIYOR: 'Onay bekliyor',
+  REDDEDILDI: 'Reddedildi',
+}
+
+// 6.2: Görev oluşturma. Öncelik ve efor bu formda gönderilmez (US-032 ayrı ekran).
+export interface CreateTaskInput {
+  title: string
+  description: string | null
+  start_date: string | null
+  due_date: string | null
+  assignee_id: number | null
+}
+
+// 7.1: Kanban panosu
+export interface BoardColumn {
+  status: ActiveTaskStatus
+  tasks: Task[]
+}
+export interface BoardResponse {
+  columns: BoardColumn[]
+}
+

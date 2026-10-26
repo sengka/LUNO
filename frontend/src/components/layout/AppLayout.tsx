@@ -9,7 +9,6 @@ import {
   UsersIcon,
   type LucideIcon,
 } from 'lucide-react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Logo } from '@/components/Logo'
+import { UserAvatar } from '@/components/UserAvatar'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 import { ROLE_LABELS, type User } from '@/types/api'
@@ -39,26 +39,6 @@ const NAV_ITEMS: NavItem[] = [
   // US-004: Ekip üyesi bu sayfayı menüde görmez
   { to: '/kullanicilar', label: 'Kullanıcılar', icon: UsersIcon, adminOnly: true },
 ]
-
-function initials(fullName: string) {
-  return fullName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toLocaleUpperCase('tr'))
-    .join('')
-}
-
-function UserAvatar({ user, className }: { user: User; className?: string }) {
-  return (
-    <Avatar className={cn('size-9', className)}>
-      {user.avatar_url && <AvatarImage src={user.avatar_url} alt="" />}
-      <AvatarFallback className="bg-secondary font-medium text-secondary-foreground">
-        {initials(user.full_name)}
-      </AvatarFallback>
-    </Avatar>
-  )
-}
 
 function SidebarContent({ user, isAdmin, onNavigate }: { user: User; isAdmin: boolean; onNavigate?: () => void }) {
   return (

@@ -13,6 +13,7 @@ export function ProjectInvitePanel({ projectId }: { projectId: number }) {
   const invite = useMutation({
     mutationFn: () => membersApi.createInvite(projectId),
     retry: false,
+    meta: { skipForbiddenToast: true },
     onSuccess: () => {
       setCopyError(null)
       toast.success('Davet bağlantısı oluşturuldu.')
