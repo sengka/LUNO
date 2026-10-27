@@ -77,7 +77,7 @@ def build_task_response(task: Task) -> TaskResponse:
         subtask_done_count=sum(1 for st in subtasks if st.status == TaskStatus.DONE),
         depends_on=[],
         risk_level=None,
-        comment_count=0,
+        comment_count=len(task.comments) if hasattr(task, "comments") and task.comments is not None else 0,
         file_count=0,
         created_at=task.created_at,
         updated_at=task.updated_at,

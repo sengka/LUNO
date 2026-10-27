@@ -167,3 +167,13 @@ class NestedSubtaskNotAllowedException(CustomAPIException):
             code="NESTED_SUBTASK_NOT_ALLOWED",
             message=message
         )
+
+
+class FileNotFoundException(CustomAPIException):
+    def __init__(self, message: str = "Dosya bulunamadı."):
+        super().__init__(
+            status_code=404,
+            code="FILE_NOT_FOUND",
+            message=message
+        )
+
