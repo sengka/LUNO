@@ -75,13 +75,15 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   REDDEDILDI: 'Reddedildi',
 }
 
-// 6.2: Görev oluşturma. Öncelik ve efor bu formda gönderilmez (US-032 ayrı ekran).
+// 6.2: Görev oluşturma; isteğe bağlı öncelik ve efor (US-032).
 export interface CreateTaskInput {
   title: string
   description: string | null
   start_date: string | null
   due_date: string | null
   assignee_id: number | null
+  priority?: TaskPriority
+  story_points?: StoryPoints
 }
 
 // 7.1: Kanban panosu

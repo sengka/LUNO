@@ -88,6 +88,9 @@ export function KanbanBoard({ projectId }: { projectId: number }) {
     },
     onSuccess: (task) => {
       queryClient.setQueryData(taskKeys.detail(task.id), task)
+      void queryClient.invalidateQueries({ queryKey: taskKeys.all, predicate: (query) =>
+        !(query.queryKey[1] === 'detail' && query.queryKey[2] === task.id) && query.queryKey[1] !== 'board',
+      })
       // Proje ilerleme yüzdesi DONE sayısına göre değişir
       void queryClient.invalidateQueries({ queryKey: ['projects'] })
     },

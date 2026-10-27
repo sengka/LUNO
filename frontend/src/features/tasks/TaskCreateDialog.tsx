@@ -24,6 +24,7 @@ import { ApiError } from '@/lib/api'
 import { applyApiErrors } from '@/lib/form-errors'
 import { taskKeys, tasksApi } from './api'
 import { AssigneeSelect } from './AssigneeSelect'
+import { PRIORITY_LABELS, STORY_POINT_OPTIONS } from './types'
 
 const DATE_RANGE_MESSAGE = 'Teslim tarihi başlangıç tarihinden önce olamaz.'
 
@@ -39,6 +40,10 @@ const createTaskSchema = z
     start_date: z.string(),
     due_date: z.string(),
     assignee_id: z.number().nullable(),
+    priority: z.enum(['DUSUK', 'ORTA', 'YUKSEK'], { error: 'Geçerli bir öncelik seçin.' }).nullable(),
+    story_points: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(5), z.literal(8), z.literal(13)], {
+      error: 'Efor puanı 1, 2, 3, 5, 8 veya 13 olmalıdır.',
+    }).nullable(),
   })
   // YYYY-MM-DD biçimindeki tarihler metin olarak da doğru sıralanır
   .refine((values) => !values.start_date || !values.due_date || values.due_date >= values.start_date, {
@@ -48,7 +53,7 @@ const createTaskSchema = z
 
 type CreateTaskValues = z.infer<typeof createTaskSchema>
 
-const FIELDS = ['title', 'description', 'start_date', 'due_date', 'assignee_id'] as const
+const FIELDS = ['title', 'description', 'start_date', 'due_date', 'assignee_id', 'priority', 'story_points'] as const
 
 const EMPTY_VALUES: CreateTaskValues = {
   title: '',
@@ -56,6 +61,8 @@ const EMPTY_VALUES: CreateTaskValues = {
   start_date: '',
   due_date: '',
   assignee_id: null,
+  priority: null,
+  story_points: null,
 }
 
 // US-011 · Mockup: docs/tasarim/04-proje-detay-kanban.png ("Yeni görev")
@@ -79,8 +86,11 @@ export function TaskCreateDialog({ projectId, trigger }: { projectId: number; tr
         start_date: values.start_date || null,
         due_date: values.due_date || null,
         assignee_id: values.assignee_id,
+        ...(values.priority !== null ? { priority: values.priority } : {}),
+        ...(values.story_points !== null ? { story_points: values.story_points } : {}),
       }),
     onSuccess: (task) => {
+      queryClient.setQueryData(taskKeys.detail(task.id), task)
       // Yeni görev Kanban'ın To Do sütununda, proje ilerlemesi de güncel görünsün
       void queryClient.invalidateQueries({ queryKey: taskKeys.board(projectId) })
       void queryClient.invalidateQueries({ queryKey: ['projects'] })
@@ -118,7 +128,7 @@ export function TaskCreateDialog({ projectId, trigger }: { projectId: number; tr
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Yeni görev</DialogTitle>
           <DialogDescription>Görev Kanban panosunun To Do sütununa eklenir.</DialogDescription>
@@ -153,6 +163,31 @@ export function TaskCreateDialog({ projectId, trigger }: { projectId: number; tr
                 aria-invalid={!!errors.due_date}
                 {...form.register('due_date')}
               />
+            </FormField>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField id="create-task-priority" label="Öncelik" error={errors.priority?.message}>
+              <Controller name="priority" control={form.control} render={({ field }) => (
+                <select id="create-task-priority" ref={field.ref} onBlur={field.onBlur}
+                  value={field.value ?? ''} onChange={(event) => field.onChange(event.target.value || null)}
+                  disabled={create.isPending} className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  aria-invalid={!!errors.priority} aria-describedby={errors.priority ? 'create-task-priority-error' : undefined}>
+                  <option value="">Belirtilmedi</option>
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              )} />
+            </FormField>
+            <FormField id="create-task-story-points" label="Efor puanı" error={errors.story_points?.message}>
+              <Controller name="story_points" control={form.control} render={({ field }) => (
+                <select id="create-task-story-points" ref={field.ref} onBlur={field.onBlur}
+                  value={field.value ?? ''} onChange={(event) => field.onChange(event.target.value === '' ? null : Number(event.target.value))}
+                  disabled={create.isPending} className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  aria-invalid={!!errors.story_points} aria-describedby={errors.story_points ? 'create-task-story-points-error' : undefined}>
+                  <option value="">Belirtilmedi</option>
+                  {STORY_POINT_OPTIONS.map((value) => <option key={value} value={value}>{value} puan</option>)}
+                </select>
+              )} />
             </FormField>
           </div>
 
