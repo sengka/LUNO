@@ -18,6 +18,7 @@ from app.database import Base
 from app.models.enums import STORY_POINT_VALUES, Priority, TaskStatus
 
 if TYPE_CHECKING:
+    from app.models.comment import Comment
     from app.models.label import Label
     from app.models.project import Project
     from app.models.user import User
@@ -111,6 +112,9 @@ class Task(Base):
     )
     subtasks: Mapped[list["Task"]] = relationship(
         back_populates="parent", cascade="all, delete-orphan"
+    )
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __repr__(self) -> str:
