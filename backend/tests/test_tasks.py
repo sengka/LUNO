@@ -1167,3 +1167,367 @@ def test_priority_and_story_points_on_update(client: TestClient, db_session: Ses
     )
     assert res_invalid_prio.status_code == 422
     assert res_invalid_prio.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+# ============================================================================
+# HATA #186 - Görev düzenlemede title null gönderildiğinde doğrulama
+# ============================================================================
+
+def test_update_task_null_or_blank_title_rejected(client: TestClient, db_session: Session):
+    """HATA #186: PATCH /tasks/{id} title null veya boş gönderilirse 422 VALIDATION_ERROR dönmeli."""
+    admin_data = create_user(client, "Admin BUG186", "admin_bug186@luno.com")
+    promote_to_admin(db_session, admin_data["id"])
+    project = create_project(db_session, admin_data["id"])
+
+    task = Task(project_id=project.id, title="Orijinal Başlık", status=TaskStatus.TODO)
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    token = get_token(client, "admin_bug186@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. title: null gönderildiğinde 500 değil, 422 dönmeli
+    res_null = client.patch(f"/api/v1/tasks/{task.id}", json={"title": None}, headers=headers)
+    assert res_null.status_code == 422
+    data_null = res_null.json()
+    assert data_null["error"]["code"] == "VALIDATION_ERROR"
+    assert data_null["error"]["message"] == "Lütfen hatalı alanları düzeltin."
+    assert data_null["error"]["fields"]["title"] == "Görev başlığı zorunludur."
+
+    # 2. title: "   " gönderildiğinde 422 dönmeli
+    res_blank = client.patch(f"/api/v1/tasks/{task.id}", json={"title": "   "}, headers=headers)
+    assert res_blank.status_code == 422
+    assert res_blank.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert res_blank.json()["error"]["fields"]["title"] == "Görev başlığı zorunludur."
+
+    # 3. Veritabanındaki başlık değişmemiş olmalı
+    db_session.refresh(task)
+    assert task.title == "Orijinal Başlık"
+
+
+# ============================================================================
+# US-016 - Takvim API'si (Sözleşme 7.2)
+# ============================================================================
+
+def test_calendar_success(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Tarih aralığındaki aktif görevler takvimde döner."""
+    from datetime import date
+    owner = create_user(client, "Cal Owner", "cal_owner@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    member = create_user(client, "Cal Member", "cal_member@luno.com")
+    add_member_to_project(db_session, project.id, member["id"])
+
+    # Görev 1: Aralıkta, atanan var, IN_PROGRESS
+    t1 = Task(
+        project_id=project.id,
+        title="Giriş ekranı",
+        start_date=date(2026, 10, 6),
+        due_date=date(2026, 10, 10),
+        status=TaskStatus.IN_PROGRESS,
+        assignee_id=member["id"],
+    )
+    # Görev 2: Başlangıç tarihi aralıkta, TODO
+    t2 = Task(
+        project_id=project.id,
+        title="Veritabanı tasarımı",
+        start_date=date(2026, 10, 15),
+        due_date=date(2026, 11, 5),
+        status=TaskStatus.TODO,
+    )
+    # Görev 3: Aktif değil (ONAY_BEKLIYOR) -> Takvimde dönmemeli
+    t_pending = Task(
+        project_id=project.id,
+        title="Bekleyen görev",
+        start_date=date(2026, 10, 12),
+        due_date=date(2026, 10, 14),
+        status=TaskStatus.ONAY_BEKLIYOR,
+    )
+    # Görev 4: Tarih aralığı dışında (Aralık 2026) -> Takvimde dönmemeli
+    t_out = Task(
+        project_id=project.id,
+        title="Gelecek görev",
+        start_date=date(2026, 12, 1),
+        due_date=date(2026, 12, 10),
+        status=TaskStatus.TODO,
+    )
+    # Görev 5: Tarihleri None -> Takvimde dönmemeli
+    t_nodate = Task(
+        project_id=project.id,
+        title="Tarihsiz görev",
+        status=TaskStatus.TODO,
+    )
+    db_session.add_all([t1, t2, t_pending, t_out, t_nodate])
+    db_session.commit()
+
+    token = get_token(client, "cal_member@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-10-01&to=2026-10-31",
+        headers=headers,
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "events" in data
+    events = data["events"]
+    assert len(events) == 2
+
+    task_ids = [e["task_id"] for e in events]
+    assert t1.id in task_ids
+    assert t2.id in task_ids
+    assert t_pending.id not in task_ids
+    assert t_out.id not in task_ids
+    assert t_nodate.id not in task_ids
+
+    e1 = next(e for e in events if e["task_id"] == t1.id)
+    assert e1["title"] == "Giriş ekranı"
+    assert e1["start_date"] == "2026-10-06"
+    assert e1["due_date"] == "2026-10-10"
+    assert e1["status"] == "IN_PROGRESS"
+    assert e1["assignee"] is not None
+    assert e1["assignee"]["id"] == member["id"]
+    assert e1["assignee"]["full_name"] == "Cal Member"
+
+
+def test_calendar_invalid_range_to_before_from(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: to < from ise 400 INVALID_DATE_RANGE."""
+    owner = create_user(client, "Cal Owner 2", "cal_owner2@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    token = get_token(client, "cal_owner2@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-10-31&to=2026-10-01",
+        headers=headers,
+    )
+    assert res.status_code == 400
+    data = res.json()
+    assert data["error"]["code"] == "INVALID_DATE_RANGE"
+    assert "Bitiş tarihi başlangıç tarihinden önce olamaz" in data["error"]["message"]
+
+
+def test_calendar_range_exceeds_93_days(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Aralık 93 günden fazla ise 400 INVALID_DATE_RANGE."""
+    owner = create_user(client, "Cal Owner 3", "cal_owner3@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    token = get_token(client, "cal_owner3@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 100 günlük aralık
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-01-01&to=2026-04-20",
+        headers=headers,
+    )
+    assert res.status_code == 400
+    data = res.json()
+    assert data["error"]["code"] == "INVALID_DATE_RANGE"
+    assert "Tarih aralığı en fazla 93 gün olabilir" in data["error"]["message"]
+
+
+def test_calendar_non_member_forbidden(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Proje üyesi olmayan kullanıcı 403 PROJECT_ACCESS_DENIED alır."""
+    owner = create_user(client, "Cal Owner 4", "cal_owner4@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    stranger = create_user(client, "Cal Stranger", "cal_stranger@luno.com")
+
+    token = get_token(client, "cal_stranger@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        f"/api/v1/projects/{project.id}/calendar?from=2026-10-01&to=2026-10-31",
+        headers=headers,
+    )
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+
+def test_calendar_project_not_found(client: TestClient, db_session: Session):
+    """Sözleşme 7.2: Var olmayan proje 404 PROJECT_NOT_FOUND döner."""
+    user = create_user(client, "Cal User 5", "cal_user5@luno.com")
+    token = get_token(client, "cal_user5@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(
+        "/api/v1/projects/999999/calendar?from=2026-10-01&to=2026-10-31",
+        headers=headers,
+    )
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+
+
+# ============================================================================
+# US-017 - Gantt API'si (Sözleşme 7.3)
+# ============================================================================
+
+def test_gantt_success(client: TestClient, db_session: Session):
+    """Sözleşme 7.3: Başlangıç ve teslim tarihi olan aktif görevler Gantt şemasında döner."""
+    from datetime import date
+    owner = create_user(client, "Gantt Owner", "gantt_owner@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    member = create_user(client, "Gantt Member", "gantt_member@luno.com")
+    add_member_to_project(db_session, project.id, member["id"])
+
+    # Görev 1: Tarihleri tam, IN_PROGRESS, alt görevi yok
+    t1 = Task(
+        project_id=project.id,
+        title="Giriş ekranı",
+        start_date=date(2026, 10, 6),
+        due_date=date(2026, 10, 10),
+        status=TaskStatus.IN_PROGRESS,
+    )
+    # Görev 2: Tarihleri tam, DONE, alt görevi yok -> progress 100.0
+    t2 = Task(
+        project_id=project.id,
+        title="Veritabanı şeması",
+        start_date=date(2026, 10, 1),
+        due_date=date(2026, 10, 5),
+        status=TaskStatus.DONE,
+    )
+    # Görev 3: Yalnızca start_date var, due_date None -> DÖNMEMELİ
+    t_no_due = Task(
+        project_id=project.id,
+        title="Teslim tarihi yok",
+        start_date=date(2026, 10, 5),
+        due_date=None,
+        status=TaskStatus.TODO,
+    )
+    # Görev 4: Aktif değil (ONAY_BEKLIYOR) -> DÖNMEMELİ
+    t_pending = Task(
+        project_id=project.id,
+        title="Onay bekleyen görev",
+        start_date=date(2026, 10, 5),
+        due_date=date(2026, 10, 12),
+        status=TaskStatus.ONAY_BEKLIYOR,
+    )
+    db_session.add_all([t1, t2, t_no_due, t_pending])
+    db_session.flush()
+
+    # Alt görev: t1'in alt görevi, tarihleri tam, TODO -> Gantt listesinde de yer almalı
+    sub = Task(
+        project_id=project.id,
+        parent_id=t1.id,
+        title="Giriş formu validasyonu",
+        start_date=date(2026, 10, 7),
+        due_date=date(2026, 10, 9),
+        status=TaskStatus.TODO,
+    )
+    db_session.add(sub)
+    db_session.commit()
+
+    token = get_token(client, "gantt_member@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(f"/api/v1/projects/{project.id}/gantt", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+
+    # Proje bilgisi
+    assert "project" in data
+    assert data["project"]["start_date"] == project.start_date.isoformat()
+    assert data["project"]["end_date"] == project.end_date.isoformat()
+
+    # Items
+    assert "items" in data
+    items = data["items"]
+    assert len(items) == 3  # t1, t2, sub
+
+    task_ids = [item["task_id"] for item in items]
+    assert t1.id in task_ids
+    assert t2.id in task_ids
+    assert sub.id in task_ids
+    assert t_no_due.id not in task_ids
+    assert t_pending.id not in task_ids
+
+    # t1 kontrolü (1 alt görevi var, o da TODO -> progress: 0.0)
+    item_t1 = next(item for item in items if item["task_id"] == t1.id)
+    assert item_t1["title"] == "Giriş ekranı"
+    assert item_t1["start_date"] == "2026-10-06"
+    assert item_t1["due_date"] == "2026-10-10"
+    assert item_t1["progress_percent"] == 0.0
+    assert item_t1["status"] == "IN_PROGRESS"
+    assert item_t1["parent_id"] is None
+    assert item_t1["depends_on"] == []
+
+    # t2 kontrolü (alt görevi yok, DONE -> progress: 100.0)
+    item_t2 = next(item for item in items if item["task_id"] == t2.id)
+    assert item_t2["progress_percent"] == 100.0
+    assert item_t2["status"] == "DONE"
+
+    # sub kontrolü (parent_id t1 olmalı)
+    item_sub = next(item for item in items if item["task_id"] == sub.id)
+    assert item_sub["parent_id"] == t1.id
+    assert item_sub["progress_percent"] == 0.0
+
+
+def test_gantt_progress_calculation_with_subtasks(client: TestClient, db_session: Session):
+    """Sözleşme 7.3: Alt görevleri olan bir görevin progress_percent değeri doğru hesaplanır."""
+    from datetime import date
+    owner = create_user(client, "Gantt Owner 2", "gantt_owner2@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    # Ana görev: 3 alt görevi var, 1 tanesi DONE -> 1/3 = 33.3%
+    parent_task = Task(
+        project_id=project.id,
+        title="Büyük Görev",
+        start_date=date(2026, 10, 1),
+        due_date=date(2026, 10, 20),
+        status=TaskStatus.IN_PROGRESS,
+    )
+    db_session.add(parent_task)
+    db_session.flush()
+
+    st1 = Task(project_id=project.id, parent_id=parent_task.id, title="Alt 1", start_date=date(2026, 10, 2), due_date=date(2026, 10, 5), status=TaskStatus.DONE)
+    st2 = Task(project_id=project.id, parent_id=parent_task.id, title="Alt 2", start_date=date(2026, 10, 6), due_date=date(2026, 10, 10), status=TaskStatus.IN_PROGRESS)
+    st3 = Task(project_id=project.id, parent_id=parent_task.id, title="Alt 3", start_date=date(2026, 10, 11), due_date=date(2026, 10, 15), status=TaskStatus.TODO)
+    db_session.add_all([st1, st2, st3])
+    db_session.commit()
+
+    token = get_token(client, "gantt_owner2@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(f"/api/v1/projects/{project.id}/gantt", headers=headers)
+    assert res.status_code == 200
+    items = res.json()["items"]
+
+    p_item = next(item for item in items if item["task_id"] == parent_task.id)
+    assert p_item["progress_percent"] == 33.3
+
+
+def test_gantt_non_member_forbidden(client: TestClient, db_session: Session):
+    """Sözleşme 7.3: Proje üyesi olmayan kullanıcı 403 PROJECT_ACCESS_DENIED alır."""
+    owner = create_user(client, "Gantt Owner 3", "gantt_owner3@luno.com")
+    promote_to_admin(db_session, owner["id"])
+    project = create_project(db_session, owner["id"])
+
+    stranger = create_user(client, "Gantt Stranger", "gantt_stranger@luno.com")
+    token = get_token(client, "gantt_stranger@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get(f"/api/v1/projects/{project.id}/gantt", headers=headers)
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "PROJECT_ACCESS_DENIED"
+
+
+def test_gantt_project_not_found(client: TestClient, db_session: Session):
+    """Sözleşme 7.3: Var olmayan proje 404 PROJECT_NOT_FOUND döner."""
+    user = create_user(client, "Gantt User 4", "gantt_user4@luno.com")
+    token = get_token(client, "gantt_user4@luno.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get("/api/v1/projects/999999/gantt", headers=headers)
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "PROJECT_NOT_FOUND"
+
+

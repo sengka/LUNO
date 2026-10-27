@@ -77,10 +77,11 @@ class TaskUpdateRequest(BaseModel):
     @field_validator("title")
     @classmethod
     def strip_title(cls, value: Optional[str]) -> Optional[str]:
-        if value is not None:
-            value = value.strip()
-            if len(value) < 2:
-                raise ValueError("Görev başlığı zorunludur.")
+        if value is None:
+            raise ValueError("Görev başlığı zorunludur.")
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("Görev başlığı zorunludur.")
         return value
 
     @field_validator("story_points")
@@ -152,3 +153,42 @@ class BoardColumn(BaseModel):
 class BoardResponse(BaseModel):
     """Sözleşme 7.1: Kanban panosu yanıtı."""
     columns: List[BoardColumn]
+
+
+class CalendarEvent(BaseModel):
+    """Sözleşme 7.2: Takvim etkinliği."""
+    task_id: int
+    title: str
+    start_date: Optional[date] = None
+    due_date: Optional[date] = None
+    status: str
+    assignee: Optional[UserSummary] = None
+
+
+class CalendarResponse(BaseModel):
+    """Sözleşme 7.2: Takvim yanıtı."""
+    events: List[CalendarEvent]
+
+
+class GanttProjectSummary(BaseModel):
+    """Sözleşme 7.3: Gantt proje tarihleri."""
+    start_date: date
+    end_date: date
+
+
+class GanttItem(BaseModel):
+    """Sözleşme 7.3: Gantt görev öğesi."""
+    task_id: int
+    title: str
+    start_date: date
+    due_date: date
+    progress_percent: float
+    status: str
+    parent_id: Optional[int] = None
+    depends_on: List[int] = Field(default_factory=list)
+
+
+class GanttResponse(BaseModel):
+    """Sözleşme 7.3: Gantt şeması yanıtı."""
+    project: GanttProjectSummary
+    items: List[GanttItem]

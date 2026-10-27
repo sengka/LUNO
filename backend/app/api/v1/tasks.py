@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, Response, status
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -20,6 +21,11 @@ from app.schemas.task import (
     TaskListResponse,
     BoardColumn,
     BoardResponse,
+    CalendarEvent,
+    CalendarResponse,
+    GanttProjectSummary,
+    GanttItem,
+    GanttResponse,
 )
 from app.services.tasks import create_task
 from app.schemas.project import UserSummary
@@ -263,6 +269,169 @@ def get_project_board(
 
 
 @router.get(
+    "/projects/{project_id}/calendar",
+    response_model=CalendarResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Takvim görünümü (US-016 / 7.2)",
+)
+def get_project_calendar(
+    project_id: int,
+    from_date: date = Query(..., alias="from", description="Başlangıç tarihi (YYYY-MM-DD)"),
+    to_date: date = Query(..., alias="to", description="Bitiş tarihi (YYYY-MM-DD)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Proje takvim etkinliklerini döner (US-016, FR-044, sözleşme 7.2).
+    Erişim: Proje üyesi (FR-013).
+    - Proje yoksa 404 PROJECT_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - to < from ise 400 INVALID_DATE_RANGE ("Bitiş tarihi başlangıç tarihinden önce olamaz.")
+    - (to - from).days > 93 ise 400 INVALID_DATE_RANGE ("Tarih aralığı en fazla 93 gün olabilir.")
+    - Yalnızca aktif görevler döner (TODO, IN_PROGRESS, REVIEW_TESTING, DONE).
+    - Başlangıç veya teslim tarihi bu aralıkta olan görevler listelenir.
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    if to_date < from_date:
+        raise InvalidDateRangeException("Bitiş tarihi başlangıç tarihinden önce olamaz.")
+
+    if (to_date - from_date).days > 93:
+        raise InvalidDateRangeException("Tarih aralığı en fazla 93 gün olabilir.")
+
+    active_statuses = [
+        TaskStatus.TODO,
+        TaskStatus.IN_PROGRESS,
+        TaskStatus.REVIEW_TESTING,
+        TaskStatus.DONE,
+    ]
+
+    date_filter = or_(
+        and_(Task.start_date.isnot(None), Task.start_date >= from_date, Task.start_date <= to_date),
+        and_(Task.due_date.isnot(None), Task.due_date >= from_date, Task.due_date <= to_date),
+        and_(Task.start_date.isnot(None), Task.due_date.isnot(None), Task.start_date <= from_date, Task.due_date >= to_date),
+    )
+
+    tasks = (
+        db.query(Task)
+        .filter(
+            Task.project_id == project_id,
+            Task.status.in_(active_statuses),
+            date_filter,
+        )
+        .order_by(Task.start_date.asc().nulls_last(), Task.due_date.asc().nulls_last(), Task.id.asc())
+        .all()
+    )
+
+    events = [
+        CalendarEvent(
+            task_id=t.id,
+            title=t.title,
+            start_date=t.start_date,
+            due_date=t.due_date,
+            status=t.status.value,
+            assignee=_user_summary(t.assignee),
+        )
+        for t in tasks
+    ]
+
+    return CalendarResponse(events=events)
+
+
+@router.get(
+    "/projects/{project_id}/gantt",
+    response_model=GanttResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Gantt şeması (US-017 / 7.3)",
+)
+def get_project_gantt(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Proje Gantt şeması verilerini döner (US-017, FR-045, sözleşme 7.3).
+    Erişim: Proje üyesi (FR-013).
+    - Proje yoksa 404 PROJECT_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - Yalnızca başlangıç ve teslim tarihi olan aktif görevler (TODO, IN_PROGRESS, REVIEW_TESTING, DONE) döner.
+    - Alt görevler de döner.
+    - progress_percent: Alt görevi varsa tamamlanan alt görev oranı; yoksa DONE ise 100.0, değilse 0.0.
+    - depends_on: Sprint 9'a kadar boş liste [].
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    active_statuses = [
+        TaskStatus.TODO,
+        TaskStatus.IN_PROGRESS,
+        TaskStatus.REVIEW_TESTING,
+        TaskStatus.DONE,
+    ]
+
+    tasks = (
+        db.query(Task)
+        .filter(
+            Task.project_id == project_id,
+            Task.status.in_(active_statuses),
+            Task.start_date.isnot(None),
+            Task.due_date.isnot(None),
+        )
+        .order_by(Task.start_date.asc(), Task.due_date.asc(), Task.id.asc())
+        .all()
+    )
+
+    items = []
+    for t in tasks:
+        subtasks = t.subtasks or []
+        if subtasks:
+            done_count = sum(1 for st in subtasks if st.status == TaskStatus.DONE)
+            progress = round((done_count / len(subtasks)) * 100, 1)
+        else:
+            progress = 100.0 if t.status == TaskStatus.DONE else 0.0
+
+        items.append(
+            GanttItem(
+                task_id=t.id,
+                title=t.title,
+                start_date=t.start_date,
+                due_date=t.due_date,
+                progress_percent=progress,
+                status=t.status.value,
+                parent_id=t.parent_id,
+                depends_on=[],
+            )
+        )
+
+    return GanttResponse(
+        project=GanttProjectSummary(
+            start_date=project.start_date,
+            end_date=project.end_date,
+        ),
+        items=items,
+    )
+
+
+@router.get(
     "/tasks/{task_id}",
     response_model=TaskResponse,
     status_code=status.HTTP_200_OK,
@@ -331,6 +500,14 @@ def update_task(
         raise ForbiddenException("Bu işlem için yetkiniz yok.")
 
     update_data = task_in.model_dump(exclude_unset=True)
+
+    if "title" in update_data and (update_data["title"] is None or not str(update_data["title"]).strip()):
+        raise CustomAPIException(
+            status_code=422,
+            code="VALIDATION_ERROR",
+            message="Lütfen hatalı alanları düzeltin.",
+            fields={"title": "Görev başlığı zorunludur."},
+        )
 
     # Tarih kontrolü (FR-025, FR-031)
     new_start = update_data.get("start_date", task.start_date)
