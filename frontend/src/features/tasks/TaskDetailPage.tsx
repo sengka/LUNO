@@ -13,6 +13,7 @@ import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskEditForm } from './TaskEditForm'
 import { TaskLabels } from './TaskLabels'
 import { TaskSubtasks } from './TaskSubtasks'
+import { TaskComments } from '@/features/comments/TaskComments'
 
 import { TaskAssigneeField, TaskStatusField } from './TaskDetailFields'
 import { PRIORITY_LABELS } from './types'
@@ -76,6 +77,7 @@ function TaskDetailContent() {
                   </>}
                 </div>
                 <TaskSubtasks key={task.id} task={task} />
+                <TaskComments key={`comments-${task.id}`} task={task} />
               </section>
               <aside className="border-t pt-6 md:border-t-0 md:border-l md:pt-0 md:pl-6" aria-label="Görev bilgileri">
                 <h2 className="mb-6 text-lg font-semibold text-primary">Görev bilgileri</h2>
