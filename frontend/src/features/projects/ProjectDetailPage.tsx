@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { SettingsIcon } from 'lucide-react'
+import { KanbanIcon, PlusIcon, SettingsIcon } from 'lucide-react'
 import { AccessDenied } from '@/components/AccessDenied'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
+import { KanbanBoard } from '@/features/tasks/KanbanBoard'
+import { TaskCreateDialog } from '@/features/tasks/TaskCreateDialog'
 import { ApiError } from '@/lib/api'
 import { projectsApi } from './api'
 import { ProjectEditForm } from './ProjectEditForm'
@@ -178,6 +180,33 @@ function ProjectDetailContent() {
           />
         </section>
       )}
+
+      {/* US-015: Kanban panosu. Takvim ve Gantt sekmeleri kendi sprintlerinde eklenecek. */}
+      <section aria-labelledby="project-board-title" className="grid gap-5">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b">
+          <h2
+            id="project-board-title"
+            className="flex items-center gap-2 border-b-2 border-primary px-1 pb-3 font-semibold text-brand"
+          >
+            <KanbanIcon className="size-4" />
+            Kanban
+          </h2>
+          {isAdmin && (
+            <div className="pb-3">
+              <TaskCreateDialog
+                projectId={project.id}
+                trigger={
+                  <Button>
+                    <PlusIcon />
+                    Yeni görev
+                  </Button>
+                }
+              />
+            </div>
+          )}
+        </div>
+        <KanbanBoard projectId={project.id} />
+      </section>
 
       <section
         aria-labelledby="project-info-title"

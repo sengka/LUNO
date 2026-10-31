@@ -135,6 +135,41 @@ docker compose down
 | `port is already allocated` veya `address already in use` | `5173`, `8000` ya da `5432` portlarından biri başka bir uygulama tarafından kullanılıyordur. O uygulamayı kapatın veya `docker-compose.yml` içindeki sol taraftaki port numarasını değiştirin. |
 | Sayfa açılmıyor veya servis hata veriyor | `docker compose ps` ile servis durumuna, `docker compose logs --tail=100 backend` ve `docker compose logs --tail=100 frontend` ile son kayıtlara bakın. Veritabanı için `docker compose logs --tail=100 db` kullanın. |
 
+## Canlı yayın (Render + Supabase)
+
+Canlı ortamın Render ayarları proje kökündeki `render.yaml` dosyasında tanımlıdır. Frontend Render Static Site olarak derlenir; backend Docker ile çalışır. Veritabanı Supabase PostgreSQL'dir. Yayın için GitHub deposunu Render'a bağlayıp **New > Blueprint** ile bu dosyadaki kaynakları oluşturun.
+
+### 1. Supabase PostgreSQL bağlantısı
+
+1. Supabase'te bir proje oluşturun ve veritabanı parolasını güvenli bir yere kaydedin.
+2. Projede **Connect > Session pooler** bölümünü açıp bağlantı adresini kopyalayın. Parolada `@`, `#`, `?`, `/` gibi özel karakterler varsa URL içinde kodlanmalıdır.
+3. Render Blueprint ilk kurulum sırasında `DATABASE_URL` ister. Supabase adresini SQLAlchemy/psycopg2 biçimine dönüştürün: baştaki `postgresql://` yerine `postgresql+psycopg2://` kullanın ve sona `?sslmode=require` ekleyin (adreste zaten `?` varsa `&sslmode=require`). Bu değeri yalnızca Render'a girin; GitHub'a veya sohbete koymayın.
+
+### 2. Render servisleri ve ortam değişkenleri
+
+Blueprint, `luno-api` backend servisini ve `luno-frontend` statik sitesini oluşturur. Gizli değişkenler ve henüz bilinmeyen canlı adresler Blueprint'in ilk kurulum ekranında geçici değerlerle doldurulabilir; servis URL'leri oluştuktan sonra Render Dashboard'da gerçek değerlerle güncellenmelidir.
+
+Backend'in **Environment** bölümünde:
+
+| Değişken | Değer |
+|---|---|
+| `SECRET_KEY` | Blueprint'in Render'da ürettiği rastgele değer |
+| `DATABASE_URL` | Yukarıdaki Supabase bağlantısı |
+| `CORS_ORIGINS` | Frontend'in Render URL'si, ör. `https://luno-frontend.onrender.com` |
+| `FRONTEND_URL` | Aynı frontend URL'si |
+
+Frontend'in **Environment** bölümünde `VITE_API_URL` değerini backend URL'si ve `/api/v1` ile ayarlayın. Vite bu adresi derleme sırasında pakete eklediği için değişiklikten sonra frontend'i yeniden deploy edin. Frontend API adresini ve backend'in CORS değişkenlerini servislerin oluşturduğu gerçek URL'lere göre doldurun.
+
+Backend başlangıçta `alembic upgrade head` çalıştırır. Canlı veritabanına **`python -m app.seed` çalıştırmayın**; bu komut herkesçe bilinen demo hesaplarını ekler. API'nin `https://<backend-adresi>/health` adresi `{"status":"ok"}` döndürmelidir.
+
+#### Canlı adresler
+
+- **Frontend:** https://luno-frontend.onrender.com
+- **Backend API:** https://luno-api-mu54.onrender.com/api/v1
+- **Backend sağlık kontrolü:** https://luno-api-mu54.onrender.com/health
+
+Render'ın ücretsiz backend servisi bir süre kullanılmadığında uykuya geçebilir; sonraki ilk istek yaklaşık 50 saniye veya daha uzun sürebilir.
+
 ### Backend
 
 Gereksinim: Python 3.11 veya üzeri. Komutlar `backend/` klasöründe çalıştırılır.

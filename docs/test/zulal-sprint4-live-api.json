@@ -1,0 +1,1259 @@
+[
+  {
+    "method": "POST",
+    "path": "/projects/1/tasks",
+    "request": {
+      "title": "LUNO temporary API 898dc6d1"
+    },
+    "status": 201,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO temporary API 898dc6d1",
+      "description": null,
+      "status": "TODO",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO temporary API 898dc6d1",
+      "description": null,
+      "status": "TODO",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "title": " "
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "title": "String should have at least 2 characters"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "title": "x"
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "title": "String should have at least 2 characters"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "title": "String should have at most 200 characters"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "story_points": 4
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "story_points": "Efor puanı 1, 2, 3, 5, 8 veya 13 olmalıdır."
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "priority": "INVALID"
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "priority": "Input should be 'DUSUK', 'ORTA' or 'YUKSEK'"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "start_date": "2026-11-10",
+      "due_date": "2026-11-01"
+    },
+    "status": 400,
+    "response": {
+      "error": {
+        "code": "INVALID_DATE_RANGE",
+        "message": "Teslim tarihi başlangıç tarihinden önce olamaz.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "priority": "YUKSEK",
+      "story_points": 8
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 8,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 8,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "story_points": 1
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 1,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 1,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "story_points": 2
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 2,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 2,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "story_points": 3
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 3,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 3,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "story_points": 5
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 5,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 5,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "story_points": 8
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 8,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 8,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "story_points": 13
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "priority": "DUSUK"
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "DUSUK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "DUSUK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "priority": "ORTA"
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "ORTA",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "ORTA",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "priority": "YUKSEK"
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/projects/1/labels",
+    "request": null,
+    "status": 200,
+    "response": []
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": "API test 898dc6d1"
+    },
+    "status": 201,
+    "response": {
+      "id": 1,
+      "name": "API test 898dc6d1",
+      "color": "#6B7280"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": "API TEST 898DC6D1"
+    },
+    "status": 409,
+    "response": {
+      "error": {
+        "code": "LABEL_EXISTS",
+        "message": "Bu etiket zaten var.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": " "
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "name": "Etiket adı boş olamaz."
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "name": "String should have at most 50 characters"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": "invalid",
+      "color": "#abc"
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "color": "String should match pattern '^#[0-9A-Fa-f]{6}$'"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": "invalid",
+      "color": " #123456"
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "color": "String should match pattern '^#[0-9A-Fa-f]{6}$'"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": "invalid",
+      "color": ""
+    },
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Lütfen hatalı alanları düzeltin.",
+        "fields": {
+          "color": "String should match pattern '^#[0-9A-Fa-f]{6}$'"
+        },
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "label_ids": [
+        1
+      ]
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        }
+      ],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "label_ids": [
+        1
+      ]
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        }
+      ],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        }
+      ],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/tasks/20/subtasks",
+    "request": {
+      "title": "Temporary child 898dc6d1"
+    },
+    "status": 201,
+    "response": {
+      "id": 21,
+      "parent_id": 20,
+      "title": "Temporary child 898dc6d1",
+      "description": null,
+      "status": "TODO",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/tasks/21/subtasks",
+    "request": {
+      "title": "Nested test"
+    },
+    "status": 400,
+    "response": {
+      "error": {
+        "code": "NESTED_SUBTASK_NOT_ALLOWED",
+        "message": "Alt görevlere alt görev eklenemez.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/projects/1/tasks?parent_id=20&include_pending=true&page=1&limit=10",
+    "request": null,
+    "status": 200,
+    "response": {
+      "items": [
+        {
+          "id": 21,
+          "parent_id": 20,
+          "title": "Temporary child 898dc6d1",
+          "description": null,
+          "status": "TODO",
+          "priority": null,
+          "story_points": null,
+          "start_date": null,
+          "due_date": null,
+          "labels": [],
+          "subtask_count": 0,
+          "subtask_done_count": 0
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "limit": 10
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/21/status",
+    "request": {
+      "status": "DONE"
+    },
+    "status": 200,
+    "response": {
+      "id": 21,
+      "parent_id": 20,
+      "title": "Temporary child 898dc6d1",
+      "description": null,
+      "status": "DONE",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        }
+      ],
+      "subtask_count": 1,
+      "subtask_done_count": 1
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/tasks/20/subtasks",
+    "request": {
+      "title": "Temporary member child 898dc6d1"
+    },
+    "status": 201,
+    "response": {
+      "id": 22,
+      "parent_id": 20,
+      "title": "Temporary member child 898dc6d1",
+      "description": null,
+      "status": "ONAY_BEKLIYOR",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        }
+      ],
+      "subtask_count": 2,
+      "subtask_done_count": 1
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "title": "Unauthorized"
+    },
+    "status": 403,
+    "response": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "Bu işlem için yetkiniz yok.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 403,
+    "response": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "Bu işlem için yetkiniz yok.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/projects/2/tasks",
+    "request": null,
+    "status": 200,
+    "response": {
+      "items": [
+        {
+          "id": 16,
+          "parent_id": null,
+          "title": "Ana sayfa kodlaması",
+          "description": null,
+          "status": "TODO",
+          "priority": "ORTA",
+          "story_points": 3,
+          "start_date": "2026-10-22",
+          "due_date": "2026-10-29",
+          "labels": [],
+          "subtask_count": 0,
+          "subtask_done_count": 0
+        },
+        {
+          "id": 15,
+          "parent_id": null,
+          "title": "Ana sayfa tasarımı",
+          "description": null,
+          "status": "TODO",
+          "priority": "YUKSEK",
+          "story_points": 5,
+          "start_date": "2026-10-15",
+          "due_date": "2026-10-22",
+          "labels": [],
+          "subtask_count": 0,
+          "subtask_done_count": 0
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "limit": 10
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/16",
+    "request": null,
+    "status": 403,
+    "response": {
+      "error": {
+        "code": "PROJECT_ACCESS_DENIED",
+        "message": "Bu projeye erişim yetkiniz yok.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 401,
+    "response": {
+      "error": {
+        "code": "UNAUTHORIZED",
+        "message": "Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "LUNO updated 898dc6d1",
+      "description": "Disposable test task",
+      "status": "TODO",
+      "priority": "YUKSEK",
+      "story_points": 13,
+      "start_date": "2026-11-01",
+      "due_date": "2026-11-10",
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        }
+      ],
+      "subtask_count": 2,
+      "subtask_done_count": 1
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 204,
+    "response": null
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 404,
+    "response": {
+      "error": {
+        "code": "TASK_NOT_FOUND",
+        "message": "Görev bulunamadı.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/21",
+    "request": null,
+    "status": 404,
+    "response": {
+      "error": {
+        "code": "TASK_NOT_FOUND",
+        "message": "Görev bulunamadı.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/22",
+    "request": null,
+    "status": 404,
+    "response": {
+      "error": {
+        "code": "TASK_NOT_FOUND",
+        "message": "Görev bulunamadı.",
+        "fields": null,
+        "details": null
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/labels",
+    "request": {
+      "name": "API test color 898dc6d1",
+      "color": "#3a4CA0"
+    },
+    "status": 201,
+    "response": {
+      "id": 2,
+      "name": "API test color 898dc6d1",
+      "color": "#3a4CA0"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/projects/1/tasks",
+    "request": {
+      "title": "Temporary label preservation test",
+      "label_ids": [
+        1
+      ]
+    },
+    "status": 201,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "Temporary label preservation test",
+      "description": null,
+      "status": "TODO",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        }
+      ],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/20",
+    "request": {
+      "label_ids": [
+        1,
+        2
+      ]
+    },
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "Temporary label preservation test",
+      "description": null,
+      "status": "TODO",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        },
+        {
+          "id": 2,
+          "name": "API test color 898dc6d1",
+          "color": "#3a4CA0"
+        }
+      ],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 20,
+      "parent_id": null,
+      "title": "Temporary label preservation test",
+      "description": null,
+      "status": "TODO",
+      "priority": null,
+      "story_points": null,
+      "start_date": null,
+      "due_date": null,
+      "labels": [
+        {
+          "id": 1,
+          "name": "API test 898dc6d1",
+          "color": "#6B7280"
+        },
+        {
+          "id": 2,
+          "name": "API test color 898dc6d1",
+          "color": "#3a4CA0"
+        }
+      ],
+      "subtask_count": 0,
+      "subtask_done_count": 0
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 204,
+    "response": null
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/20",
+    "request": null,
+    "status": 404,
+    "response": {
+      "error": {
+        "code": "TASK_NOT_FOUND",
+        "message": "Görev bulunamadı.",
+        "fields": null,
+        "details": null
+      }
+    }
+  }
+]

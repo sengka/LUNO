@@ -11,6 +11,7 @@ import { HomePage } from '@/pages/HomePage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { InviteAcceptPage } from '@/features/projects/InviteAcceptPage'
+import { TaskDetailPage } from '@/features/tasks/TaskDetailPage'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             element={<ProjectDetailPage />}
           />
           <Route path="/davet/:token" element={<InviteAcceptPage />} />
+          <Route path="/gorevler/:taskId" element={<TaskDetailPage />} />
 
           <Route element={<AdminRoute />}>
             <Route path="/kullanicilar" element={<UsersPage />} />

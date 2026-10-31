@@ -48,6 +48,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     for err in exc.errors():
         field_name = err["loc"][-1] if err["loc"] else "general"
         msg = err.get("msg", "Geçersiz değer")
+        if isinstance(msg, str) and msg.startswith("Value error, "):
+            msg = msg[len("Value error, "):]
         fields[str(field_name)] = msg
 
     return JSONResponse(

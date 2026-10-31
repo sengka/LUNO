@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-24",
+  "source_sha": "3237fc8b5c69cfb580404a90ff2e8f0877aa1aad",
+  "python": "3.12.14",
+  "packages": {
+    "fastapi": "0.162.0",
+    "pytest": "9.1.1",
+    "sqlalchemy": "2.1.6",
+    "httpx": "0.28.1",
+    "pydantic": "2.14.1"
+  },
+  "isolation": "TestClient; real routes; only get_db overridden to isolated memory SQLite; synthetic setup; no external app data changed",
+  "creation_post_in_openapi": false,
+  "tasks_after_attempts": 0,
+  "requests": [
+    {
+      "case": "positive project control",
+      "method": "GET",
+      "path": "/api/v1/projects/1",
+      "http_status": 200,
+      "response": {
+        "id": 1,
+        "name": "QA existing project",
+        "description": null,
+        "start_date": "2026-10-01",
+        "end_date": "2026-12-01",
+        "progress_percent": 0.0,
+        "member_count": 2,
+        "created_by": {
+          "id": 1,
+          "full_name": "QA admin",
+          "avatar_url": null
+        },
+        "created_at": "2026-10-24T20:49:39Z",
+        "updated_at": "2026-10-24T20:49:39Z"
+      }
+    },
+    {
+      "case": "valid admin",
+      "method": "POST",
+      "path": "/api/v1/projects/1/tasks",
+      "http_status": 404,
+      "response": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "case": "empty title",
+      "method": "POST",
+      "path": "/api/v1/projects/1/tasks",
+      "http_status": 404,
+      "response": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "case": "reversed dates",
+      "method": "POST",
+      "path": "/api/v1/projects/1/tasks",
+      "http_status": 404,
+      "response": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "case": "outside assignee",
+      "method": "POST",
+      "path": "/api/v1/projects/1/tasks",
+      "http_status": 404,
+      "response": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "case": "member active creation attempt",
+      "method": "POST",
+      "path": "/api/v1/projects/1/tasks",
+      "http_status": 404,
+      "response": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "case": "anonymous",
+      "method": "POST",
+      "path": "/api/v1/projects/1/tasks",
+      "http_status": 404,
+      "response": {
+        "detail": "Not Found"
+      }
+    }
+  ]
+}
