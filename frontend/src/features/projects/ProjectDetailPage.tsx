@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { useParams } from 'react-router'
+import { lazy, Suspense, useState } from 'react'
+import { Link, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { KanbanIcon, PlusIcon, SettingsIcon } from 'lucide-react'
+import { CalendarIcon, ChartGanttIcon, KanbanIcon, PlusIcon, SettingsIcon } from 'lucide-react'
 import { AccessDenied } from '@/components/AccessDenied'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,9 @@ import { ProjectEditForm } from './ProjectEditForm'
 import { ProjectDeleteButton } from './ProjectDeleteButton'
 import { ProjectMembers } from './ProjectMembers'
 import { ProjectInvitePanel } from './ProjectInvitePanel'
+
+const ProjectCalendar = lazy(() => import('./ProjectCalendar'))
+const ProjectGantt = lazy(() => import('./ProjectGantt'))
 
 function formatDate(value: string | null) {
   if (!value) return 'Belirtilmedi'
@@ -29,7 +32,8 @@ function formatDate(value: string | null) {
 }
 
 function ProjectDetailContent() {
-  const { projectId } = useParams()
+  const { projectId, view } = useParams()
+  const activeView = view === 'takvim' || view === 'gantt' ? view : 'kanban'
   const id = Number(projectId)
   const validId = Number.isSafeInteger(id) && id > 0
   const { isAdmin } = useAuth()
@@ -181,16 +185,16 @@ function ProjectDetailContent() {
         </section>
       )}
 
-      {/* US-015: Kanban panosu. Takvim ve Gantt sekmeleri kendi sprintlerinde eklenecek. */}
       <section aria-labelledby="project-board-title" className="grid gap-5">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b">
-          <h2
-            id="project-board-title"
-            className="flex items-center gap-2 border-b-2 border-primary px-1 pb-3 font-semibold text-brand"
-          >
-            <KanbanIcon className="size-4" />
-            Kanban
-          </h2>
+          <h2 id="project-board-title" className="sr-only">Proje görünümleri</h2>
+          <nav aria-label="Proje görünümleri" className="flex flex-wrap gap-4">
+            {([
+              ['kanban', 'Kanban', KanbanIcon, `/projeler/${project.id}`],
+              ['takvim', 'Takvim', CalendarIcon, `/projeler/${project.id}/takvim`],
+              ['gantt', 'Gantt', ChartGanttIcon, `/projeler/${project.id}/gantt`],
+            ] as const).map(([value, label, Icon, to]) => <Link key={value} to={to} aria-current={activeView === value ? 'page' : undefined} className={`flex items-center gap-2 border-b-2 px-1 pb-3 font-semibold ${activeView === value ? 'border-primary text-brand' : 'border-transparent text-muted-foreground hover:text-brand'}`}><Icon className="size-4" />{label}</Link>)}
+          </nav>
           {isAdmin && (
             <div className="pb-3">
               <TaskCreateDialog
@@ -205,7 +209,9 @@ function ProjectDetailContent() {
             </div>
           )}
         </div>
-        <KanbanBoard projectId={project.id} />
+        <Suspense fallback={<p role="status">Görünüm yükleniyor…</p>}>
+          {activeView === 'takvim' ? <ProjectCalendar projectId={project.id} /> : activeView === 'gantt' ? <ProjectGantt projectId={project.id} /> : <KanbanBoard projectId={project.id} />}
+        </Suspense>
       </section>
 
       <section

@@ -29,6 +29,7 @@ export default function App() {
             path="/projeler/:projectId"
             element={<ProjectDetailPage />}
           />
+          <Route path="/projeler/:projectId/:view" element={<ProjectDetailPage />} />
           <Route path="/davet/:token" element={<InviteAcceptPage />} />
           <Route path="/gorevler/:taskId" element={<TaskDetailPage />} />
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { XIcon } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -31,11 +31,15 @@ function TaskDetailContent() {
   const id = Number(taskId)
   const valid = Number.isSafeInteger(id) && id > 0
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAdmin } = useAuth()
   const [editing, setEditing] = useState(false)
   const query = useQuery({ queryKey: taskKeys.detail(id), queryFn: () => tasksApi.getDetail(id), enabled: valid, retry: false })
   const task = query.data
-  const backTo = task ? `/projeler/${task.project_id}` : '/projeler'
+  const timelineFrom: unknown = location.state?.timelineFrom
+  const backTo = task && typeof timelineFrom === 'string' &&
+    [`/projeler/${task.project_id}/takvim`, `/projeler/${task.project_id}/gantt`].includes(timelineFrom)
+    ? timelineFrom : task ? `/projeler/${task.project_id}` : '/projeler'
   let error: string | null = null
   if (!valid) error = 'Geçersiz görev numarası.'
   else if (query.isError) {
