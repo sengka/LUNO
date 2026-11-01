@@ -18,6 +18,7 @@ from app.database import Base
 from app.models.enums import STORY_POINT_VALUES, Priority, TaskStatus
 
 if TYPE_CHECKING:
+    from app.models.file import ProjectFile
     from app.models.comment import Comment
     from app.models.label import Label
     from app.models.project import Project
@@ -116,6 +117,8 @@ class Task(Base):
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="task", cascade="all, delete-orphan", lazy="selectin"
     )
+    # Göreve yüklenen dosyalar (US-018). Görev silinince dosyalar projede kalır (task_id = NULL).
+    files: Mapped[list["ProjectFile"]] = relationship(back_populates="task", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Task id={self.id} title={self.title!r} status={self.status.value}>"

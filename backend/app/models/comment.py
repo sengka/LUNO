@@ -40,7 +40,10 @@ class Comment(Base):
     task_id: Mapped[int | None] = mapped_column(
         ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, index=True
     )
-    file_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    # Dosya yorumu (8.6). Dosya silinince yorumları da silinir (8.4).
+    file_id: Mapped[int | None] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
     )
