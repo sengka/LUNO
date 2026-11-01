@@ -216,7 +216,29 @@ Uygulama `http://localhost:8000`, API dokümantasyonu `http://localhost:8000/doc
   ```
 - `alembic upgrade head` "table already exists" hatası verirse veritabanınız Alembic'ten önce oluşturulmuştur. SQLite kullanıyorsanız `backend/luno.db` dosyasını silip komutu tekrar çalıştırın.
 
-**Dosya depolama:** Yüklenen dosyalar varsayılan olarak `backend/uploads/` klasörüne kaydedilir (`STORAGE_BACKEND=local`, Git'e girmez). Canlı ortamda Supabase Storage kullanılır: `.env` içinde `STORAGE_BACKEND=supabase`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` ve `SUPABASE_BUCKET` tanımlanır; Supabase'de aynı adla özel (private) bir bucket açılmalıdır.
+#### Dosya depolama (US-018)
+
+Yerel geliştirmede dosyalar `backend/uploads/` klasöründe tutulur. Bu klasör `.gitignore` içindedir ve Git'e eklenmez. `.env.example` dosyasını `.env` olarak kopyaladıktan sonra varsayılan ayarlar (`STORAGE_BACKEND=local`, `UPLOAD_DIR=./uploads`) yeterlidir.
+
+Canlı Render ortamında dosyalar Supabase Storage'daki **özel (private)** `luno-files` bucket'ında tutulur. Uygulama yükleme, indirme ve silme işlemlerini kimliği doğrulanmış backend API'si üzerinden yapar; bucket public yapılmamalı ve `service_role` anahtarı yalnızca backend'de tutulmalıdır.
+
+**Supabase kurulumu:**
+
+1. Supabase Dashboard'da LUNO projesini açıp **Storage → New bucket** seçin.
+2. Bucket adını `luno-files` yapın ve **Public bucket** seçeneğini kapalı bırakın.
+3. **Project Settings → Data API** bölümünden Project URL'yi; **Project Settings → API Keys → Legacy API Keys** bölümünden `service_role` anahtarını alın. `anon` anahtarını kullanmayın.
+4. Render'da `luno-api` servisini açıp **Environment** bölümüne şu değerleri ekleyin:
+
+   | Değişken | Değer |
+   |---|---|
+   | `STORAGE_BACKEND` | `supabase` |
+   | `SUPABASE_URL` | Supabase Project URL (`https://….supabase.co`) |
+   | `SUPABASE_SERVICE_KEY` | Supabase `service_role` anahtarı |
+   | `SUPABASE_BUCKET` | `luno-files` |
+
+5. **Save Changes** ile servisin yeniden dağıtılmasını bekleyin. Ardından uygulamada bir projeye dosya yükleyip Supabase **Storage → luno-files** alanında nesnenin oluştuğunu kontrol edin.
+
+`SUPABASE_SERVICE_KEY` gizli bir anahtardır: Git'e, `.env.example` dosyasına, frontend ayarlarına veya sohbete koymayın. Yalnızca Render backend servisinin gizli Environment değişkeni olarak saklayın. `STORAGE_BACKEND=supabase` seçildiğinde eksik URL, anahtar veya bucket ayarı uygulamanın başlangıcında açık bir yapılandırma hatası verir; sessizce geçici yerel diske dönmez.
 
 **Örnek veri seçenekleri:** `python -m app.seed --reset` tabloları boşaltıp yeniden yükler (id'ler de sıfırlanır); `python -m app.seed --buyuk` ayrıca 200 görev ve 20 üyeli bir yük testi projesi ekler. Örnek veri yalnızca yerel geliştirme ve demo içindir: şifre ve davet anahtarları herkesçe bilinir, gerçek kullanıcıların olduğu bir veritabanında çalıştırmayın.
 
