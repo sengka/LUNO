@@ -196,7 +196,7 @@ def test_comment_count_on_task_detail(client: TestClient, setup_comments: dict):
     assert t2["comment_count"] == 2
 
 
-def test_file_comments_endpoints_placeholder(client: TestClient, setup_comments: dict):
+def test_file_comments_missing_file(client: TestClient, setup_comments: dict):
     headers = setup_comments["member_headers"]
 
     res_get = client.get("/api/v1/files/42/comments", headers=headers)
