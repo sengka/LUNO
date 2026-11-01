@@ -6,6 +6,7 @@ from app.api.v1.invites import router as invites_router
 from app.api.v1.tasks import router as tasks_router
 from app.api.v1.labels import router as labels_router
 from app.api.v1.comments import router as comments_router
+from app.api.v1.files import router as files_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
@@ -15,3 +16,4 @@ api_router.include_router(invites_router)
 api_router.include_router(tasks_router)
 api_router.include_router(labels_router)
 api_router.include_router(comments_router)
+api_router.include_router(files_router)

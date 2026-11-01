@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
     INVITE_EXPIRE_DAYS: int = 7
 
+    # Dosya depolama (US-018, sözleşme 8.1). "local": UPLOAD_DIR klasörü (geliştirme, testler).
+    # "supabase": Supabase Storage (canlı ortam; Render'ın diski her deploy'da sıfırlanır).
+    STORAGE_BACKEND: str = "local"
+    UPLOAD_DIR: str = "./uploads"
+    SUPABASE_URL: str = ""
+    SUPABASE_SERVICE_KEY: str = ""
+    SUPABASE_BUCKET: str = "luno-files"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

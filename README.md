@@ -216,6 +216,8 @@ Uygulama `http://localhost:8000`, API dokümantasyonu `http://localhost:8000/doc
   ```
 - `alembic upgrade head` "table already exists" hatası verirse veritabanınız Alembic'ten önce oluşturulmuştur. SQLite kullanıyorsanız `backend/luno.db` dosyasını silip komutu tekrar çalıştırın.
 
+**Dosya depolama:** Yüklenen dosyalar varsayılan olarak `backend/uploads/` klasörüne kaydedilir (`STORAGE_BACKEND=local`, Git'e girmez). Canlı ortamda Supabase Storage kullanılır: `.env` içinde `STORAGE_BACKEND=supabase`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` ve `SUPABASE_BUCKET` tanımlanır; Supabase'de aynı adla özel (private) bir bucket açılmalıdır.
+
 **Örnek veri seçenekleri:** `python -m app.seed --reset` tabloları boşaltıp yeniden yükler (id'ler de sıfırlanır); `python -m app.seed --buyuk` ayrıca 200 görev ve 20 üyeli bir yük testi projesi ekler. Örnek veri yalnızca yerel geliştirme ve demo içindir: şifre ve davet anahtarları herkesçe bilinir, gerçek kullanıcıların olduğu bir veritabanında çalıştırmayın.
 
 **Örnek veride kimler var?**
