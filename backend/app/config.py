@@ -1,5 +1,7 @@
 import os
-from pydantic import Field
+from typing import Literal
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -17,11 +19,30 @@ class Settings(BaseSettings):
 
     # Dosya depolama (US-018, sözleşme 8.1). "local": UPLOAD_DIR klasörü (geliştirme, testler).
     # "supabase": Supabase Storage (canlı ortam; Render'ın diski her deploy'da sıfırlanır).
-    STORAGE_BACKEND: str = "local"
+    STORAGE_BACKEND: Literal["local", "supabase"] = "local"
     UPLOAD_DIR: str = "./uploads"
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
     SUPABASE_BUCKET: str = "luno-files"
+
+    @model_validator(mode="after")
+    def validate_storage_settings(self):
+        if self.STORAGE_BACKEND == "supabase":
+            missing = [
+                name
+                for name, value in (
+                    ("SUPABASE_URL", self.SUPABASE_URL),
+                    ("SUPABASE_SERVICE_KEY", self.SUPABASE_SERVICE_KEY),
+                    ("SUPABASE_BUCKET", self.SUPABASE_BUCKET),
+                )
+                if not value.strip()
+            ]
+            if missing:
+                raise ValueError(
+                    "STORAGE_BACKEND=supabase için şu ortam değişkenleri gerekli: "
+                    + ", ".join(missing)
+                )
+        return self
 
     @property
     def cors_origins_list(self) -> list[str]:
