@@ -9,7 +9,9 @@ Uç noktalar dosyanın nerede durduğunu bilmez; `get_storage()` ile gelen nesne
                SUPABASE_URL, SUPABASE_SERVICE_KEY ve SUPABASE_BUCKET gerekir.
 """
 
+from contextlib import suppress
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from urllib.parse import quote
 
 import httpx
@@ -34,8 +36,22 @@ class LocalStorage:
 
     def save(self, key: str, data: bytes, content_type: str) -> None:
         path = self._path(key)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
+        temporary = None
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            # Publish only complete objects; interrupted writes must not leave a
+            # partially uploaded file at its final key.
+            with NamedTemporaryFile(dir=path.parent, prefix=".upload-", delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(data)
+            temporary.replace(path)
+        except OSError as exc:
+            # API endpoints consistently translate StorageError into 503 JSON.
+            raise StorageError("Dosya yerel depoya kaydedilemedi.") from exc
+        finally:
+            if temporary is not None:
+                with suppress(OSError):
+                    temporary.unlink(missing_ok=True)
 
     def read(self, key: str) -> bytes:
         path = self._path(key)
