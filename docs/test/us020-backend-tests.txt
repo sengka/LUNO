@@ -1,0 +1,31 @@
+........................................................................ [ 13%]
+........................................................................ [ 26%]
+........................................................................ [ 39%]
+........................................................................ [ 53%]
+........................................................................ [ 66%]
+........................................................................ [ 79%]
+........................................................................ [ 93%]
+.....................................                                    [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_auth.py: 2 warnings
+tests/test_comment_acceptance.py: 22 warnings
+tests/test_comments.py: 1 warning
+tests/test_files.py: 1 warning
+tests/test_labels.py: 6 warnings
+tests/test_project_membership.py: 1 warning
+tests/test_projects.py: 1 warning
+tests/test_role_management.py: 3 warnings
+tests/test_subtasks.py: 8 warnings
+tests/test_task_creation.py: 5 warnings
+tests/test_task_status_regression.py: 11 warnings
+tests/test_tasks.py: 5 warnings
+tests/test_users.py: 1 warning
+  C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py:59: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    response = await handler(conn, exc)  # type: ignore[arg-type]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+541 passed, 68 warnings in 399.74s (0:06:39)

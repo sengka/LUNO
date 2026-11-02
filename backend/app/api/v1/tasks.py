@@ -54,7 +54,7 @@ def _user_summary(user: User | None) -> UserSummary | None:
 def build_task_response(task: Task) -> TaskResponse:
     """Task modelini sözleşme 2. bölümdeki Task nesnesine çevirir.
 
-    Henüz tablosu olmayan alanlar (depends_on, comment_count, file_count)
+    Henüz tablosu olmayan alanlar (depends_on)
     boş/0 döner; risk_level Sprint 7'de (bölüm 12.1) hesaplanacağı için şimdilik null.
     """
     subtasks = task.subtasks or []
@@ -78,7 +78,7 @@ def build_task_response(task: Task) -> TaskResponse:
         depends_on=[],
         risk_level=None,
         comment_count=len(task.comments) if hasattr(task, "comments") and task.comments is not None else 0,
-        file_count=0,
+        file_count=len(task.files) if task.files is not None else 0,
         created_at=task.created_at,
         updated_at=task.updated_at,
     )

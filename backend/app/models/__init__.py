@@ -2,6 +2,7 @@
 
 from app.models.comment import Comment
 from app.models.enums import Priority, TaskStatus
+from app.models.file import ProjectFile
 from app.models.label import Label, task_labels
 from app.models.project import Project
 from app.models.project_invite import ProjectInvite
@@ -13,6 +14,7 @@ __all__ = [
     "Comment",
     "Label",
     "Priority",
+    "ProjectFile",
     "Project",
     "ProjectInvite",
     "ProjectMember",

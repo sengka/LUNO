@@ -177,3 +177,30 @@ class FileNotFoundException(CustomAPIException):
             message=message
         )
 
+
+class FileTooLargeException(CustomAPIException):
+    def __init__(self, message: str = "Dosya en fazla 10 MB olabilir."):
+        super().__init__(
+            status_code=413,
+            code="FILE_TOO_LARGE",
+            message=message
+        )
+
+class UnsupportedFileTypeException(CustomAPIException):
+    def __init__(
+        self,
+        message: str = "Desteklenen formatlar: PDF, DOCX, XLSX, PPTX, PNG, JPG, TXT.",
+    ):
+        super().__init__(
+            status_code=415,
+            code="UNSUPPORTED_FILE_TYPE",
+            message=message
+        )
+
+class StorageUnavailableException(CustomAPIException):
+    def __init__(self, message: str = "Dosya deposuna şu an ulaşılamıyor, lütfen tekrar deneyin."):
+        super().__init__(
+            status_code=503,
+            code="STORAGE_UNAVAILABLE",
+            message=message
+        )

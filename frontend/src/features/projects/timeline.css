@@ -1,0 +1,25 @@
+.timeline {
+  --fc-classic-border: var(--border);
+  --fc-classic-today: var(--accent);
+  --fc-classic-background: var(--card);
+  --fc-classic-foreground: var(--foreground);
+  --fc-classic-button: var(--primary);
+  --fc-classic-button-border: var(--primary);
+  --fc-classic-button-strong: var(--brand);
+  --fc-classic-button-strong-border: var(--brand);
+}
+.timeline .calendar-title { font-size: 1.2rem; }
+.timeline .calendar-event { cursor: pointer; }
+.timeline .task-todo { --task-color: #64748b; --task-bg: #f1f5f9; }
+.timeline .task-in_progress { --task-color: #b45309; --task-bg: #fffbeb; }
+.timeline .task-review_testing { --task-color: #7c3aed; --task-bg: #f5f3ff; }
+.timeline .task-done { --task-color: #047857; --task-bg: #ecfdf5; }
+.timeline .gantt-container { --g-bar-color: #ede7fb; --g-bar-border: #9b80e2; --g-progress-color: #6041ad; background: var(--card); }
+.timeline .gantt .bar-wrapper .bar { fill: var(--task-bg); stroke: var(--task-color); }
+.timeline .gantt .bar-wrapper .bar-progress { fill: var(--task-color); }
+.timeline .gantt .bar-label { fill: var(--foreground); }
+.timeline .gantt .bar-wrapper { cursor: pointer; }
+@media (max-width: 640px) {
+  .timeline .calendar-toolbar { align-items: flex-start; flex-direction: column; gap: .75rem; }
+  .timeline .calendar-toolbar button { font-size: .8rem; }
+}

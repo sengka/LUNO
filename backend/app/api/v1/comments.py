@@ -12,6 +12,7 @@ from app.core.exceptions import (
 )
 from app.database import get_db
 from app.models.comment import Comment
+from app.models.file import ProjectFile
 from app.models.project_member import ProjectMember
 from app.models.task import Task
 from app.models.user import User
@@ -37,26 +38,19 @@ def _verify_task_access(db: Session, task_id: int, user_id: int) -> Task:
     return task
 
 
-@router.get(
-    "/tasks/{task_id}/comments",
-    response_model=CommentListResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Görev yorumlarını listele (US-020 / 8.5)",
-)
-def list_task_comments(
-    task_id: int,
-    page: int = Query(1, ge=1, description="Sayfa numarası (varsayılan 1)"),
-    limit: int = Query(50, ge=1, le=100, description="Sayfa boyutu (varsayılan 50)"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """
-    Göreve ait yorumları eskiden yeniye sıralı ve sayfalı olarak listeler (US-020, FR-050, sözleşme 8.5).
-    Erişim: Proje üyesi (403 PROJECT_ACCESS_DENIED, 404 TASK_NOT_FOUND).
-    """
-    _verify_task_access(db, task_id, current_user.id)
+def _verify_file_access(db: Session, file_id: int, user_id: int) -> ProjectFile:
+    file = db.get(ProjectFile, file_id)
+    if file is None:
+        raise FileNotFoundException()
+    membership = db.query(ProjectMember).filter(
+        ProjectMember.project_id == file.project_id, ProjectMember.user_id == user_id
+    ).first()
+    if membership is None:
+        raise ProjectAccessDeniedException()
+    return file
 
-    query = db.query(Comment).filter(Comment.task_id == task_id)
+
+def _list_comments(query, page: int, limit: int) -> CommentListResponse:
     total = query.count()
     comments = (
         query.order_by(Comment.created_at.asc(), Comment.id.asc())
@@ -81,6 +75,27 @@ def list_task_comments(
         for c in comments
     ]
     return CommentListResponse(items=items, total=total, page=page, limit=limit)
+
+@router.get(
+    "/tasks/{task_id}/comments",
+    response_model=CommentListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Görev yorumlarını listele (US-020 / 8.5)",
+)
+def list_task_comments(
+    task_id: int,
+    page: int = Query(1, ge=1, description="Sayfa numarası (varsayılan 1)"),
+    limit: int = Query(50, ge=1, le=100, description="Sayfa boyutu (varsayılan 50)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Göreve ait yorumları eskiden yeniye sıralı ve sayfalı olarak listeler (US-020, FR-050, sözleşme 8.5).
+    Erişim: Proje üyesi (403 PROJECT_ACCESS_DENIED, 404 TASK_NOT_FOUND).
+    """
+    _verify_task_access(db, task_id, current_user.id)
+
+    return _list_comments(db.query(Comment).filter(Comment.task_id == task_id), page, limit)
 
 
 @router.post(
@@ -140,8 +155,9 @@ def list_file_comments(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Dosya yorumları (Sprint 5 / sözleşme 8.6). Dosyalar tablosu henüz bağlanmadığı için 404 FILE_NOT_FOUND."""
-    raise FileNotFoundException()
+    """Proje üyesine dosya yorumlarını eskiden yeniye ve sayfalı döndürür."""
+    _verify_file_access(db, file_id, current_user.id)
+    return _list_comments(db.query(Comment).filter(Comment.file_id == file_id), page, limit)
 
 
 @router.post(
@@ -156,5 +172,16 @@ def create_file_comment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Dosya yorumu ekleme (Sprint 5 / sözleşme 8.6). Dosyalar tablosu henüz bağlanmadığı için 404 FILE_NOT_FOUND."""
-    raise FileNotFoundException()
+    """Proje üyesinin erişebildiği dosyaya yorum ekler (US-020 / 8.6)."""
+    file = _verify_file_access(db, file_id, current_user.id)
+    comment = Comment(body=comment_in.body, author_id=current_user.id,
+                      task_id=None, file_id=file.id, created_at=datetime.now(timezone.utc))
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    return CommentResponse(
+        id=comment.id, body=comment.body,
+        author=UserSummary(id=current_user.id, full_name=current_user.full_name,
+                           avatar_url=current_user.avatar_url),
+        task_id=None, file_id=comment.file_id, created_at=comment.created_at,
+    )

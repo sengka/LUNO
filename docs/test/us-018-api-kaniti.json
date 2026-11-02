@@ -1,0 +1,457 @@
+{
+  "tested_on": "2026-11-02 Europe/Istanbul",
+  "generated_at_utc": "2026-11-01T21:08:41.348329+00:00",
+  "base_commit": "ded5ec0bae4c53ad2550c9574fd242002ff2715d",
+  "includes_fix_for": "#225",
+  "environment": "Real multipart FastAPI routes/JWT; isolated SQLite; real temporary LocalStorage. Synthetic format-recognition samples. No live Supabase or UI acceptance claim.",
+  "observed_implementation_size_boundary_bytes": 10485760,
+  "mb_unit_requires_contract_owner_clarification": true,
+  "records": [
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "sample.pdf",
+        "size_bytes": 45,
+        "sha256": "e2901e0ba5f173fb46a64d4ab5cff81acb5978485eda2067767d503c7c3ae9b4",
+        "task_id": null
+      },
+      "http_status": 201,
+      "response": {
+        "id": 2,
+        "name": "sample.pdf",
+        "size_bytes": 45,
+        "mime_type": "application/pdf",
+        "project_id": 1,
+        "task_id": null,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 1,
+      "db_count_after": 2,
+      "object_count_before": 1,
+      "object_count_after": 2,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "sample.docx",
+        "size_bytes": 353,
+        "sha256": "8f53e5ed752f47ee9be92a269c283a041a39fec164ffe1ce1508416f1117b101",
+        "task_id": null
+      },
+      "http_status": 201,
+      "response": {
+        "id": 3,
+        "name": "sample.docx",
+        "size_bytes": 353,
+        "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "project_id": 1,
+        "task_id": null,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 2,
+      "db_count_after": 3,
+      "object_count_before": 2,
+      "object_count_after": 3,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "sample.xlsx",
+        "size_bytes": 349,
+        "sha256": "f1b27fc45341a6a227677a3151a6c97292e33fb2d10ac35ad118ff30925f88b0",
+        "task_id": null
+      },
+      "http_status": 201,
+      "response": {
+        "id": 4,
+        "name": "sample.xlsx",
+        "size_bytes": 349,
+        "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "project_id": 1,
+        "task_id": null,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 3,
+      "db_count_after": 4,
+      "object_count_before": 3,
+      "object_count_after": 4,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "sample.pptx",
+        "size_bytes": 359,
+        "sha256": "fbb1cc9db9e9898907699828a6fa635d3e0a3159847aa11a80859c5810f149b9",
+        "task_id": null
+      },
+      "http_status": 201,
+      "response": {
+        "id": 5,
+        "name": "sample.pptx",
+        "size_bytes": 359,
+        "mime_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "project_id": 1,
+        "task_id": null,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 4,
+      "db_count_after": 5,
+      "object_count_before": 4,
+      "object_count_after": 5,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "sample.png",
+        "size_bytes": 24,
+        "sha256": "f731c2528f4184b386555de339aeb78f1f0908532be04e6bfe1ec790f5f50da9",
+        "task_id": null
+      },
+      "http_status": 201,
+      "response": {
+        "id": 6,
+        "name": "sample.png",
+        "size_bytes": 24,
+        "mime_type": "image/png",
+        "project_id": 1,
+        "task_id": null,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 5,
+      "db_count_after": 6,
+      "object_count_before": 5,
+      "object_count_after": 6,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "sample.jpg",
+        "size_bytes": 20,
+        "sha256": "15ef8d084e2b86e5475cfbf60cc1ae00f1aa235c48a3a60db39ad9b7c39dfc16",
+        "task_id": null
+      },
+      "http_status": 201,
+      "response": {
+        "id": 7,
+        "name": "sample.jpg",
+        "size_bytes": 20,
+        "mime_type": "image/jpeg",
+        "project_id": 1,
+        "task_id": null,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 6,
+      "db_count_after": 7,
+      "object_count_before": 6,
+      "object_count_after": 7,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "sample.txt",
+        "size_bytes": 29,
+        "sha256": "deba47d6ef9ba2d366a47a8ac6cce1cb113da61a947341e9cfe5746a66a238a1",
+        "task_id": 1
+      },
+      "http_status": 201,
+      "response": {
+        "id": 8,
+        "name": "sample.txt",
+        "size_bytes": 29,
+        "mime_type": "text/plain",
+        "project_id": 1,
+        "task_id": 1,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 7,
+      "db_count_after": 8,
+      "object_count_before": 7,
+      "object_count_after": 8,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "boundary.txt",
+        "size_bytes": 10485760,
+        "sha256": "b5eec3f68ef64d15e82dad91ff908582c5f081e61a62e22427af9bec2cd35f8d",
+        "task_id": null
+      },
+      "http_status": 201,
+      "response": {
+        "id": 9,
+        "name": "boundary.txt",
+        "size_bytes": 10485760,
+        "mime_type": "text/plain",
+        "project_id": 1,
+        "task_id": null,
+        "uploaded_by": {
+          "id": 2,
+          "full_name": "member",
+          "avatar_url": null
+        },
+        "comment_count": 0,
+        "created_at": "2026-11-01T21:08:40Z"
+      },
+      "db_count_before": 8,
+      "db_count_after": 9,
+      "object_count_before": 8,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "oversize.txt",
+        "size_bytes": 10485761,
+        "sha256": "4ea73dbccbce283083f78555e86595e0b345c46ff188509412fee1c68914d0cb",
+        "task_id": null
+      },
+      "http_status": 413,
+      "response": {
+        "error": {
+          "code": "FILE_TOO_LARGE",
+          "message": "Dosya en fazla 10 MB olabilir.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "db_count_before": 9,
+      "db_count_after": 9,
+      "object_count_before": 9,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "blocked.exe",
+        "size_bytes": 4,
+        "sha256": "a27bbff016e053a346d841b485156ad4cab8934fa45807b7cb4bad7cef54bbe4",
+        "task_id": null
+      },
+      "http_status": 415,
+      "response": {
+        "error": {
+          "code": "UNSUPPORTED_FILE_TYPE",
+          "message": "Desteklenen formatlar: PDF, DOCX, XLSX, PPTX, PNG, JPG, TXT.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "db_count_before": 9,
+      "db_count_after": 9,
+      "object_count_before": 9,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "outsider",
+      "request": {
+        "filename": "no-access.txt",
+        "size_bytes": 1,
+        "sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+        "task_id": null
+      },
+      "http_status": 403,
+      "response": {
+        "error": {
+          "code": "PROJECT_ACCESS_DENIED",
+          "message": "Bu projeye erişim yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "db_count_before": 9,
+      "db_count_after": 9,
+      "object_count_before": 9,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "external_admin",
+      "request": {
+        "filename": "external-admin.txt",
+        "size_bytes": 1,
+        "sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+        "task_id": null
+      },
+      "http_status": 403,
+      "response": {
+        "error": {
+          "code": "PROJECT_ACCESS_DENIED",
+          "message": "Bu projeye erişim yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "db_count_before": 9,
+      "db_count_after": 9,
+      "object_count_before": 9,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "wrong-task.txt",
+        "size_bytes": 1,
+        "sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+        "task_id": 2
+      },
+      "http_status": 404,
+      "response": {
+        "error": {
+          "code": "TASK_NOT_FOUND",
+          "message": "Görev bulunamadı.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "db_count_before": 9,
+      "db_count_after": 9,
+      "object_count_before": 9,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "anonymous",
+      "request": {
+        "filename": "anonymous.txt",
+        "size_bytes": 1,
+        "sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+        "task_id": null
+      },
+      "http_status": 401,
+      "response": {
+        "error": {
+          "code": "UNAUTHORIZED",
+          "message": "Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "db_count_before": 9,
+      "db_count_after": 9,
+      "object_count_before": 9,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/1/files",
+      "actor": "member",
+      "request": {
+        "filename": "storage-error.txt",
+        "size_bytes": 1,
+        "sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+        "task_id": null
+      },
+      "http_status": 503,
+      "response": {
+        "error": {
+          "code": "STORAGE_UNAVAILABLE",
+          "message": "Dosya deposuna şu an ulaşılamıyor, lütfen tekrar deneyin.",
+          "fields": null,
+          "details": null
+        }
+      },
+      "db_count_before": 9,
+      "db_count_after": 9,
+      "object_count_before": 9,
+      "object_count_after": 9,
+      "existing_data_preserved": true,
+      "stored_bytes_equal_input": null
+    }
+  ]
+}

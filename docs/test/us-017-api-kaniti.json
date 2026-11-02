@@ -1,0 +1,153 @@
+{
+  "tested_on": "2026-11-01 Europe/Istanbul",
+  "generated_at_utc": "2026-11-01T20:51:28.105374+00:00",
+  "base_commit": "eb0263fb446b2e785ce32b7b16938a0f7a604233",
+  "environment": "Real FastAPI TestClient / isolated in-memory SQLite; SQL fixture; JWT dependency unchanged",
+  "interpretation": "API evidence only; no claim of Frappe Gantt bars rendering in the unfinished #194 app UI",
+  "expected_excluded_task_ids": [
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "records": [
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/1/gantt",
+      "actor": "member",
+      "http_status": 200,
+      "response": {
+        "project": {
+          "start_date": "2026-10-01",
+          "end_date": "2026-12-31"
+        },
+        "items": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/1/gantt",
+      "actor": "member",
+      "http_status": 200,
+      "response": {
+        "project": {
+          "start_date": "2026-10-01",
+          "end_date": "2026-12-31"
+        },
+        "items": [
+          {
+            "task_id": 1,
+            "title": "Türkçe görev — şema",
+            "start_date": "2026-11-01",
+            "due_date": "2026-11-05",
+            "progress_percent": 33.3,
+            "status": "IN_PROGRESS",
+            "parent_id": null,
+            "depends_on": []
+          },
+          {
+            "task_id": 5,
+            "title": "Türkçe görev — şema",
+            "start_date": "2026-11-01",
+            "due_date": "2026-11-05",
+            "progress_percent": 100.0,
+            "status": "DONE",
+            "parent_id": null,
+            "depends_on": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/1/gantt",
+      "actor": "admin",
+      "http_status": 200,
+      "response": {
+        "project": {
+          "start_date": "2026-10-01",
+          "end_date": "2026-12-31"
+        },
+        "items": [
+          {
+            "task_id": 1,
+            "title": "Türkçe görev — şema",
+            "start_date": "2026-11-01",
+            "due_date": "2026-11-05",
+            "progress_percent": 33.3,
+            "status": "IN_PROGRESS",
+            "parent_id": null,
+            "depends_on": []
+          },
+          {
+            "task_id": 5,
+            "title": "Türkçe görev — şema",
+            "start_date": "2026-11-01",
+            "due_date": "2026-11-05",
+            "progress_percent": 100.0,
+            "status": "DONE",
+            "parent_id": null,
+            "depends_on": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/1/gantt",
+      "actor": "outsider",
+      "http_status": 403,
+      "response": {
+        "error": {
+          "code": "PROJECT_ACCESS_DENIED",
+          "message": "Bu projeye erişim yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/1/gantt",
+      "actor": "external_admin",
+      "http_status": 403,
+      "response": {
+        "error": {
+          "code": "PROJECT_ACCESS_DENIED",
+          "message": "Bu projeye erişim yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/1/gantt",
+      "actor": "anonymous",
+      "http_status": 401,
+      "response": {
+        "error": {
+          "code": "UNAUTHORIZED",
+          "message": "Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/999999/gantt",
+      "actor": "member",
+      "http_status": 404,
+      "response": {
+        "error": {
+          "code": "PROJECT_NOT_FOUND",
+          "message": "Proje bulunamadı.",
+          "fields": null,
+          "details": null
+        }
+      }
+    }
+  ]
+}
