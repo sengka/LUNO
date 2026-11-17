@@ -25,6 +25,16 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = ""
     SUPABASE_BUCKET: str = "luno-files"
 
+    # LLM servis katmanı (US-026, US-045, sözleşme 13). Ana servis Groq, yedek Gemini.
+    # Anahtar boşsa o servis kullanılmaz. Anahtarlar yalnızca backend ortamında tutulur.
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    # Gemini ücretsiz sürümüne gerçek kullanıcı verisi gönderilmez; canlı veriyle çalışırken anahtarı boş bırakın.
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    LLM_TIMEOUT_SECONDS: float = 10.0  # FR-083: 10 saniyede yanıt gelmezse yedek servise geçilir
+    LLM_RATE_LIMIT_PER_MINUTE: int = 10
+
     @model_validator(mode="after")
     def validate_storage_settings(self):
         if self.STORAGE_BACKEND == "supabase":
