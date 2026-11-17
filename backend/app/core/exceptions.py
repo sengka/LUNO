@@ -204,3 +204,25 @@ class StorageUnavailableException(CustomAPIException):
             code="STORAGE_UNAVAILABLE",
             message=message
         )
+
+
+class LLMUnavailableException(CustomAPIException):
+    """Birincil ve yedek LLM servisi yanıt vermedi (FR-084, sözleşme 13.1)."""
+
+    def __init__(self, message: str = "Yapay zekâ özelliği şu an kullanılamıyor. Lütfen daha sonra tekrar deneyin."):
+        super().__init__(
+            status_code=503,
+            code="LLM_UNAVAILABLE",
+            message=message
+        )
+
+
+class RateLimitedException(CustomAPIException):
+    """Kullanıcı başına dakikada en fazla 10 LLM isteği (sözleşme 13.1)."""
+
+    def __init__(self, message: str = "Çok fazla istek gönderdiniz, lütfen biraz bekleyin."):
+        super().__init__(
+            status_code=429,
+            code="RATE_LIMITED",
+            message=message
+        )

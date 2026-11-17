@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { Loader2Icon } from 'lucide-react'
+import { AccessDenied } from '@/components/AccessDenied'
 import { useAuth } from './auth-context'
 
 function FullScreenLoader() {
@@ -22,10 +23,18 @@ export function ProtectedRoute() {
   return <Outlet />
 }
 
-// Sadece sistem rolü Yönetici olanların girebildiği sayfalar (FR-012)
+// Sadece sistem rolü Yönetici olanların girebildiği sayfalar (FR-012).
+// Üye adresi elle açsa veya sayfayı yenilese de yönetici verisi gösterilmez, yetkisiz işlem mesajı görünür (#145).
 export function AdminRoute() {
   const { isAdmin } = useAuth()
-  if (!isAdmin) return <Navigate to="/" replace />
+  if (!isAdmin) {
+    return (
+      <AccessDenied
+        title="Bu işlem için yetkiniz yok"
+        description="Bu sayfa yalnızca Yöneticilerin kullanımına açıktır."
+      />
+    )
+  }
   return <Outlet />
 }
 
