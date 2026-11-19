@@ -21,6 +21,7 @@ from app.models.project_member import ProjectMember
 from app.models.task import Task
 from app.models.user import SystemRole, User
 from app.schemas.task import TaskCreateRequest
+from app.services.sprints import validate_sprint_for_project
 
 
 def _is_member(db: Session, project_id: int, user_id: int) -> bool:
@@ -51,6 +52,7 @@ def create_task(
       assignee_id yok sayılır (FR-026).
     - Atanan kişi projenin üyesi olmalı: 400 ASSIGNEE_NOT_MEMBER.
     - Etiketler aynı projeye ait olmalı: 422 VALIDATION_ERROR (FR-037).
+    - Sprint aynı projenin sprinti olmalı: 422 VALIDATION_ERROR (`sprint_id`).
 
     Henüz yapılmayanlar (ilgili tablolar/özellikler gelince eklenecek):
     - Ekip üyesi önerisinde yöneticilere TASK_PENDING_APPROVAL bildirimi (bildirimler, Sprint 6).
@@ -78,6 +80,8 @@ def create_task(
                 message="Lütfen hatalı alanları düzeltin.",
                 fields={"label_ids": "Etiket bulunamadı veya bu projeye ait değil."},
             )
+
+    validate_sprint_for_project(db, project_id, data.sprint_id)
 
     now = datetime.now(timezone.utc)
     task = Task(

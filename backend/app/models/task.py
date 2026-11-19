@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from app.models.comment import Comment
     from app.models.label import Label
     from app.models.project import Project
+    from app.models.sprint import Sprint
     from app.models.user import User
 
 _story_points_sql = ", ".join(str(v) for v in STORY_POINT_VALUES)
@@ -38,7 +39,7 @@ class Task(Base):
       risk_level (FR-070 – FR-072), subtask_count, subtask_done_count,
       comment_count, file_count.
     Sonraki sprintlerde eklenecek tablolar: labels / task_labels (Sprint 4),
-      task_dependencies (Sprint 9), sprints (Sprint 6; sprint_id'ye FK o zaman eklenir).
+      task_dependencies (Sprint 9).
     """
 
     __tablename__ = "tasks"
@@ -94,7 +95,10 @@ class Task(Base):
     created_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    sprint_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    # Sprint silinince görev silinmez, sprint_id null olur (sözleşme 11.2).
+    sprint_id: Mapped[int | None] = mapped_column(
+        ForeignKey("sprints.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
     )
@@ -107,6 +111,7 @@ class Task(Base):
     assignee: Mapped["User | None"] = relationship(foreign_keys=[assignee_id])
     created_by: Mapped["User | None"] = relationship(foreign_keys=[created_by_id])
     parent: Mapped["Task | None"] = relationship(back_populates="subtasks", remote_side=[id])
+    sprint: Mapped["Sprint | None"] = relationship(back_populates="tasks")
     # Etiketler (US-033, FR-037). task_labels tablosu app/models/label.py içinde.
     labels: Mapped[list["Label"]] = relationship(
         secondary="task_labels", order_by="Label.name", lazy="selectin"

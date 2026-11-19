@@ -10,7 +10,7 @@ from app.models.project import Project
 from app.models.task import Task
 from app.models.label import Label
 from app.models.project_member import ProjectMember
-from app.models.enums import TaskStatus
+from app.models.enums import ACTIVE_TASK_STATUSES, TaskStatus
 from app.schemas.task import (
     TaskCreateRequest,
     TaskUpdateRequest,
@@ -28,6 +28,7 @@ from app.schemas.task import (
     GanttResponse,
 )
 from app.services.tasks import create_task
+from app.services.sprints import validate_sprint_for_project
 from app.schemas.project import UserSummary
 from app.core.exceptions import (
     CustomAPIException,
@@ -41,6 +42,7 @@ from app.core.exceptions import (
     ForbiddenException,
 )
 from app.api.deps import get_current_user
+from app.core.pagination import MAX_PAGE
 
 router = APIRouter(tags=["Görevler"])
 
@@ -57,7 +59,9 @@ def build_task_response(task: Task) -> TaskResponse:
     Henüz tablosu olmayan alanlar (depends_on)
     boş/0 döner; risk_level Sprint 7'de (bölüm 12.1) hesaplanacağı için şimdilik null.
     """
-    subtasks = task.subtasks or []
+    # Alt görev sayıları yalnızca aktif alt görevleri sayar (sözleşme 1.3, #219-5):
+    # onay bekleyen ve reddedilen alt görevler ilerlemeyi düşürmez.
+    subtasks = [st for st in (task.subtasks or []) if st.status in ACTIVE_TASK_STATUSES]
     return TaskResponse(
         id=task.id,
         project_id=task.project_id,
@@ -138,7 +142,7 @@ def list_project_tasks(
     sprint_id: Optional[int] = Query(None, description="Sprint"),
     parent_id: Optional[int] = Query(None, description="Alt görevler için ana görev id'si"),
     include_pending: bool = Query(False, description="Onay bekleyen ve reddedilen görevleri de getir"),
-    page: int = Query(1, ge=1, description="Sayfa numarası"),
+    page: int = Query(1, ge=1, le=MAX_PAGE, description="Sayfa numarası"),
     limit: int = Query(10, ge=1, le=100, description="Sayfa boyutu"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -483,6 +487,7 @@ def update_task(
     - Yönetici değilse 403 FORBIDDEN
     - Tarih aralığı hatasında 400 INVALID_DATE_RANGE
     - Etiket bulunamazsa veya bu projeye ait değilse 422 VALIDATION_ERROR
+    - Sprint bulunamazsa veya bu projeye ait değilse 422 VALIDATION_ERROR (sprint_id)
     """
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
@@ -531,6 +536,10 @@ def update_task(
             task.labels = labels
         else:
             task.labels = []
+
+    # Sprint kontrolü (sözleşme 11.3: sprint aynı projeye ait olmalı)
+    if "sprint_id" in update_data:
+        validate_sprint_for_project(db, task.project_id, update_data["sprint_id"])
 
     for field, value in update_data.items():
         setattr(task, field, value)

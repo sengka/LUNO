@@ -1,7 +1,9 @@
 """Proje etiketleri (US-033, FR-037, sözleşme 6.11)."""
 
+import unicodedata
+
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_project_member
@@ -12,6 +14,18 @@ from app.models.project_member import ProjectMember
 from app.schemas.label import LabelCreateRequest, LabelResponse
 
 router = APIRouter(tags=["Etiketler"])
+
+
+def label_key(name: str) -> str:
+    """Etiket adını büyük/küçük harf farkı gözetmeden karşılaştırmak için anahtar (#219, #253).
+
+    SQLite'ın lower() fonksiyonu yalnızca İngilizce harfleri küçülttüğü için karşılaştırma
+    Python'da yapılır. Türkçe noktalı/noktasız i (İ, I, ı, i) aynı harf sayılır; böylece
+    "Ödeme" = "ödeme", "IŞIK" = "ışık", "API" = "api" olur.
+    """
+    text = unicodedata.normalize("NFC", name.strip())
+    text = text.replace("İ", "i").replace("ı", "i")
+    return unicodedata.normalize("NFC", text.casefold()).replace("i̇", "i")
 
 
 @router.get(
@@ -26,15 +40,11 @@ def list_labels(
     db: Session = Depends(get_db),
 ):
     """
-    Projenin etiketlerini ada göre sıralı döner.
+    Projenin etiketlerini ada göre sıralı döner (büyük/küçük harf farkı gözetmeden).
     Erişim: proje üyesi. Proje yoksa 404 PROJECT_NOT_FOUND, üye değilse 403 PROJECT_ACCESS_DENIED.
     """
-    return (
-        db.query(Label)
-        .filter(Label.project_id == project_id)
-        .order_by(func.lower(Label.name))
-        .all()
-    )
+    labels = db.query(Label).filter(Label.project_id == project_id).all()
+    return sorted(labels, key=lambda label: (label_key(label.name), label.id))
 
 
 @router.post(
@@ -51,19 +61,22 @@ def create_label(
 ):
     """
     Projeye yeni etiket ekler (FR-037).
-    Erişim: proje üyesi. Aynı projede aynı adla (büyük/küçük harf farkı gözetmeden)
-    etiket varsa 409 LABEL_EXISTS.
+    Erişim: proje üyesi. Aynı projede aynı adla (büyük/küçük harf ve Türkçe karakter farkı
+    gözetmeden) etiket varsa 409 LABEL_EXISTS. Aynı etiket aynı anda iki kez gönderilirse
+    ikincisi de 409 LABEL_EXISTS alır (veritabanı benzersizlik kuralı).
     """
-    exists = (
-        db.query(Label)
-        .filter(Label.project_id == project_id, func.lower(Label.name) == label_in.name.lower())
-        .first()
-    )
-    if exists:
+    wanted = label_key(label_in.name)
+    names = db.query(Label.name).filter(Label.project_id == project_id).all()
+    if any(label_key(name) == wanted for (name,) in names):
         raise LabelExistsException()
 
     label = Label(project_id=project_id, name=label_in.name, color=label_in.color)
     db.add(label)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Kontrolden sonra, kaydetmeden önce başka bir istek aynı etiketi eklemiş.
+        db.rollback()
+        raise LabelExistsException()
     db.refresh(label)
     return label

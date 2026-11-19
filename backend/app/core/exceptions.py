@@ -226,3 +226,11 @@ class RateLimitedException(CustomAPIException):
             code="RATE_LIMITED",
             message=message
         )
+
+class SprintNotFoundException(CustomAPIException):
+    def __init__(self, message: str = "Sprint bulunamadı."):
+        super().__init__(
+            status_code=404,
+            code="SPRINT_NOT_FOUND",
+            message=message
+        )

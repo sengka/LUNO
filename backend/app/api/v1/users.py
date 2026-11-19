@@ -11,6 +11,7 @@ from app.core.exceptions import (
     UserNotFoundException
 )
 from app.api.deps import require_admin
+from app.core.pagination import MAX_PAGE
 
 router = APIRouter(prefix="/users", tags=["Kullanıcı Yönetimi"])
 
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/users", tags=["Kullanıcı Yönetimi"])
 )
 def get_users(
     search: Optional[str] = Query(None, description="Ad ve e-postada arama (case-insensitive)"),
-    page: int = Query(1, ge=1, description="Sayfa numarası (varsayılan: 1)"),
+    page: int = Query(1, ge=1, le=MAX_PAGE, description="Sayfa numarası (varsayılan: 1)"),
     limit: int = Query(10, ge=1, le=100, description="Sayfa başına öge sayısı (varsayılan: 10)"),
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)

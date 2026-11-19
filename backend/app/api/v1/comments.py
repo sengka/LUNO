@@ -18,6 +18,7 @@ from app.models.task import Task
 from app.models.user import User
 from app.schemas.comment import CommentCreateRequest, CommentListResponse, CommentResponse
 from app.schemas.project import UserSummary
+from app.core.pagination import MAX_PAGE
 
 router = APIRouter(tags=["Yorumlar"])
 
@@ -84,7 +85,7 @@ def _list_comments(query, page: int, limit: int) -> CommentListResponse:
 )
 def list_task_comments(
     task_id: int,
-    page: int = Query(1, ge=1, description="Sayfa numarası (varsayılan 1)"),
+    page: int = Query(1, ge=1, le=MAX_PAGE, description="Sayfa numarası (varsayılan 1)"),
     limit: int = Query(50, ge=1, le=100, description="Sayfa boyutu (varsayılan 50)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -150,7 +151,7 @@ def create_task_comment(
 )
 def list_file_comments(
     file_id: int,
-    page: int = Query(1, ge=1),
+    page: int = Query(1, ge=1, le=MAX_PAGE),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

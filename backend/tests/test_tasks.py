@@ -6,6 +6,7 @@ from app.models.user import User, SystemRole
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.task import Task
+from app.models.sprint import Sprint
 from app.models.enums import TaskStatus, Priority
 
 
@@ -1029,15 +1030,20 @@ def test_kanban_board_sprint_filter(client: TestClient, db_session: Session):
     promote_to_admin(db_session, admin_data["id"])
     project = create_project(db_session, admin_data["id"])
 
-    t_sprint1 = Task(project_id=project.id, title="Sprint 1 İşi", status=TaskStatus.TODO, sprint_id=1)
-    t_sprint2 = Task(project_id=project.id, title="Sprint 2 İşi", status=TaskStatus.TODO, sprint_id=2)
+    # tasks.sprint_id artık sprints tablosuna bağlı (#248); önce sprintler oluşturulur.
+    sprint1 = Sprint(project_id=project.id, name="Sprint 1", start_date=date(2026, 10, 1), end_date=date(2026, 10, 7))
+    sprint2 = Sprint(project_id=project.id, name="Sprint 2", start_date=date(2026, 10, 8), end_date=date(2026, 10, 14))
+    db_session.add_all([sprint1, sprint2])
+    db_session.flush()
+    t_sprint1 = Task(project_id=project.id, title="Sprint 1 İşi", status=TaskStatus.TODO, sprint_id=sprint1.id)
+    t_sprint2 = Task(project_id=project.id, title="Sprint 2 İşi", status=TaskStatus.TODO, sprint_id=sprint2.id)
     db_session.add_all([t_sprint1, t_sprint2])
     db_session.commit()
 
     token = get_token(client, "admin_us15_3@luno.com")
     headers = {"Authorization": f"Bearer {token}"}
 
-    res = client.get(f"/api/v1/projects/{project.id}/board?sprint_id=1", headers=headers)
+    res = client.get(f"/api/v1/projects/{project.id}/board?sprint_id={sprint1.id}", headers=headers)
     assert res.status_code == 200
     todo_tasks = res.json()["columns"][0]["tasks"]
     assert len(todo_tasks) == 1

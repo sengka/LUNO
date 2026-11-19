@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
 from app.api.v1.api import api_router
@@ -80,6 +81,23 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "error": {
                 "code": code,
                 "message": str(exc.detail),
+                "fields": None,
+                "details": None
+            }
+        }
+    )
+
+# Veritabanı benzersizlik/bağlantı kuralına takılan istek (ör. aynı kaydın aynı anda iki kez
+# oluşturulması) 500 yerine 409 döner (#219, #253). Uç noktalar kendi hata kodlarını
+# (LABEL_EXISTS gibi) önceden kontrol eder; bu yalnızca eşzamanlı istekler için yedektir.
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={
+            "error": {
+                "code": "CONFLICT",
+                "message": "Bu işlem başka bir işlemle çakıştı. Lütfen sayfayı yenileyip tekrar deneyin.",
                 "fields": None,
                 "details": None
             }
