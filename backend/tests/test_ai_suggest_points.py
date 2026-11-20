@@ -20,6 +20,8 @@ from app.services.llm import (
     GroqProvider,
     LLMResult,
     LLMService,
+    RateLimiter,
+    get_llm_rate_limiter,
     get_llm_service,
 )
 
@@ -55,6 +57,15 @@ class FakeLLM:
         self.calls.append({"system": system, "user": user, "schema": schema})
         data = schema(story_points=self.story_points, reason=self.reason)
         return LLMResult(provider=self.provider, data=data)
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limiter():
+    # İstek sayacı uygulama genelinde tek; her test kendi sayacıyla başlasın (#259).
+    limiter = RateLimiter(10)
+    app.dependency_overrides[get_llm_rate_limiter] = lambda: limiter
+    yield
+    app.dependency_overrides.pop(get_llm_rate_limiter, None)
 
 
 @pytest.fixture
