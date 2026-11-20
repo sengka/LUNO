@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 *.db
 backend/uploads/
+# LLM deneme betiğinin (backend/scripts/llm_deneme.py) ürettiği sonuç dosyası
+backend/llm_deneme_sonuc.md
 *.sqlite3
 .env
 
