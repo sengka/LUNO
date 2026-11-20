@@ -43,7 +43,7 @@ Gözlemler:
 - `gemini-3.5-flash`, 10 isteğin 8'inde 10 saniye sınırını aştı. Muhtemel sebep, modelin yanıt vermeden önce "düşünme" adımı çalıştırması. Bu haliyle yedek servis olarak kullanılamaz.
 - Yazım hatalı ve Türkçe karakter kullanılmadan yazılmış not, iki modelde de doğru anlaşıldı. Görev içermeyen notta iki model de boş liste döndürdü.
 
-## Karar önerisi
+## Seçilen modeller
 
 | Rol | Model | Neden |
 |---|---|---|
@@ -52,13 +52,16 @@ Gözlemler:
 
 Groq'un ana servis olarak kalması teknoloji kararlarıyla uyumlu: Gemini'nin ücretsiz sürümüne yalnızca demo verisi gönderilmesi kuralı nedeniyle gerçek veriyle çalışan ana servis Groq olmalı.
 
-## Yapılması gerekenler ve riskler
+## Alınan kararlar (Sena, 20 Kasım 2026)
 
-1. **`config.py`'deki varsayılan model adları güncellenmeli** (`GROQ_MODEL`, `GEMINI_MODEL`). Bunlar güncellenmezse LLM özellikleri canlıda her istekte 503 `LLM_UNAVAILABLE` döner. Teknoloji kararı değişikliği olduğu için önce Sena'nın onayı alınmalı.
-2. **`.env.example` dosyasına `GROQ_API_KEY` ve `GEMINI_API_KEY` satırları eklenmeli.** Şu an bu satırlar yok, yeni kurulum yapan biri hangi değişkenlerin gerektiğini göremiyor.
-3. **Göreli tarihler LLM'e bırakılmamalı** (US-051, Sprint 9). Teknoloji kararlarında Türkçe tarih ifadeleri için seçilen `dateparser` kullanılmalı. Model yalnızca metindeki ifadeyi ("haftaya salı") döndürmeli, tarihe çevirmeyi backend yapmalı.
-4. **Yedek servis ve veri kuralı:** Groq yanıt vermediğinde istek otomatik olarak Gemini'ye gider. Bu durumda gerçek kullanıcı verisi de Gemini'nin ücretsiz sürümüne gitmiş olur. Bu, "Gemini'ye yalnızca demo verisi" kuralıyla çelişiyor. Demo ortamında sorun değil, ama canlı kullanım için ekipçe karar verilmeli.
-5. **Modeller değişebilir:** Bu denemede iki modelin de birkaç ay içinde kapatıldığını gördük. Model adları kodda sabit yazılmamalı, `.env` ile değiştirilebilir kalmalı (şu anki yapı böyle). Demodan önce betik bir kez daha çalıştırılmalı.
+1. **Model değişikliği onaylandı:** `GROQ_MODEL=openai/gpt-oss-120b`, `GEMINI_MODEL=gemini-3.5-flash-lite`. `config.py`'deki varsayılanlar ve kök dizindeki `.env.example`'daki model satırları #258 PR'ında güncellenecek. Bu güncelleme yapılmazsa LLM özellikleri her istekte 503 `LLM_UNAVAILABLE` döner.
+2. **Canlıda Gemini kullanılmayacak:** Canlı ortamda `GEMINI_API_KEY` boş bırakılır. Groq yanıt vermezse istek Gemini'ye gitmez, doğrudan 503 döner; böylece gerçek kullanıcı verisi Gemini'nin ücretsiz sürümüne hiç gönderilmez (teknoloji kararları, bölüm 6; `config.py`'deki yorum). Yerelde ve demoda iki anahtar da girilir, yedeğe geçiş orada gösterilir. Render ayarı için Salih'e haber verildi.
+3. **Göreli tarihler LLM'e bırakılmayacak:** US-051 görevine not edildi. Türkçe tarih ifadeleri teknoloji kararlarında seçilen `dateparser` ile çözülecek. Model yalnızca metindeki ifadeyi ("haftaya salı") döndürecek, tarihe çevirmeyi backend yapacak.
+
+## Riskler
+
+- **Modeller değişebilir:** Bu denemede iki modelin de birkaç ay içinde kapatıldığını gördük. Model adları kodda sabit yazılmamalı, ortam değişkeniyle değiştirilebilir kalmalı (şu anki yapı böyle). Demodan önce betik bir kez daha çalıştırılmalı.
+- **Canlıda yedek yok:** 2. karar nedeniyle canlıda Groq düşerse LLM özellikleri geçici olarak kullanılamaz. Uygulamanın geri kalanı bundan etkilenmez (FR-084).
 
 ## Kaynaklar
 
