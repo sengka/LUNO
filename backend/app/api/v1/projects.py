@@ -28,6 +28,7 @@ from app.core.exceptions import (
     CannotRemoveSelfException
 )
 from app.api.deps import get_current_user, require_admin, get_project_member
+from app.core.pagination import MAX_PAGE
 
 
 router = APIRouter(prefix="/projects", tags=["Projeler"])
@@ -99,7 +100,7 @@ def build_project_response(project: Project, db: Session) -> ProjectResponse:
     summary="Projelerimi Listele (US-007 / 5.1)"
 )
 def list_my_projects(
-    page: int = Query(1, ge=1, description="Sayfa numarası (varsayılan: 1)"),
+    page: int = Query(1, ge=1, le=MAX_PAGE, description="Sayfa numarası (varsayılan: 1)"),
     limit: int = Query(10, ge=1, le=100, description="Sayfa başına öge sayısı (varsayılan: 10)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)

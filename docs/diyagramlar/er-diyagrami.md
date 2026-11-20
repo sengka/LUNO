@@ -1,6 +1,6 @@
-# LUNO · ER Diyagramı (Sprint 5)
+# LUNO · ER Diyagramı (Sprint 6)
 
-Şu an veritabanında bulunan tablolar: `users`, `revoked_tokens`, `projects`, `project_members`, `project_invites`, `tasks`, `labels`, `task_labels`, `comments`, `files`.
+Şu an veritabanında bulunan tablolar: `users`, `revoked_tokens`, `projects`, `project_members`, `project_invites`, `tasks`, `labels`, `task_labels`, `comments`, `files`, `sprints`, `notifications`.
 Kaynak: API Sözleşmesi v1.1, bölüm 2 (Veri nesneleri). Model kodu: `backend/app/models/`.
 
 ![ER diyagramı](er-diyagrami.png)
@@ -21,6 +21,8 @@ Düzenlenebilir kaynak: [`er-diyagrami.drawio`](er-diyagrami.drawio) (draw.io / 
 | `task_labels` | `app/models/label.py` (US-033) | Görev ↔ etiket bağlantısı (çoka çok) |
 | `comments` | `app/models/comment.py` (Esra, US-020) | Görev ve dosya yorumları (migration `0004`) |
 | `files` | `app/models/file.py` (US-018, US-019, US-035) | Proje ve görev dosyaları; içerik depoda, burada bilgileri (migration `0005`) |
+| `sprints` | `app/models/sprint.py` (US-040, US-041) | Proje sprintleri: ad, hedef, tarihler, kapasite (migration `0006`) |
+| `notifications` | `app/models/notification.py` (US-021) | Kullanıcı bildirimleri: tür, mesaj, proje, görev, okundu (migration `0006`) |
 
 ## Kurallar
 
@@ -39,17 +41,23 @@ Düzenlenebilir kaynak: [`er-diyagrami.drawio`](er-diyagrami.drawio) (draw.io / 
 | Teslim tarihi başlangıçtan önce olamaz | `tasks` check kısıtı | FR-025 |
 | Görev durumu ve önceliği yalnızca tanımlı değerler | `tasks` check kısıtları | Sözleşme 1.3 |
 | Efor puanı 1, 2, 3, 5, 8, 13 | `tasks` check kısıtı | FR-036 |
-| Kapasite boşsa sınır yok, doluysa > 0 | `project_members` check kısıtı | FR-074, FR-075 |
-| Proje silinince görevleri, üyelikleri, davetleri, etiketleri ve dosya kayıtları silinir | `ON DELETE CASCADE` + ORM cascade | FR-020 |
+| Kapasite boşsa sınır yok, doluysa > 0 | `project_members` ve `sprints` check kısıtları | FR-074, FR-075 |
+| Sprint bitişi başlangıçtan önce olamaz | `sprints` check kısıtı | Sözleşme 11.1 |
+| Bildirim türü yalnızca tanımlı değerler (`TASK_ASSIGNED`, `COMMENT_ADDED`, `DUE_DATE_SOON`, `TASK_STALE`, `TASK_PENDING_APPROVAL`, `TASK_APPROVED`, `TASK_REJECTED`) | `notifications` check kısıtı | Sözleşme 2. bölüm |
+| Yeni bildirim okunmamış başlar | `notifications.is_read` varsayılan `false` | FR-051 |
+| Proje silinince görevleri, üyelikleri, davetleri, etiketleri, dosya kayıtları, sprintleri ve bildirimleri silinir | `ON DELETE CASCADE` + ORM cascade | FR-020 |
 | Görev veya etiket silinince aradaki bağlantı silinir (görev ve etiketin kendisi kalır) | `task_labels` iki yönde `ON DELETE CASCADE` | FR-037 |
 | Dosya silinince yorumları silinir | `comments.file_id ON DELETE CASCADE` | Sözleşme 8.4 |
 | Görev silinince yorumları silinir, dosyaları projede kalır | `comments.task_id CASCADE`, `files.task_id SET NULL` | — |
+| Sprint silinince görevler silinmez, `sprint_id`'leri `null` olur | `tasks.sprint_id ON DELETE SET NULL` | Sözleşme 11.2 |
+| Görev silinince bildirimi kalır, görev bağlantısı kalkar | `notifications.task_id ON DELETE SET NULL` | — |
+| Kullanıcı silinince bildirimleri silinir | `notifications.user_id ON DELETE CASCADE` | — |
 | Ana görev silinince alt görevleri silinir | `tasks.parent_id ON DELETE CASCADE` + ORM cascade | Sözleşme 6.7 |
 | Atanan kişi silinince görev atamasız kalır | `tasks.assignee_id ON DELETE SET NULL` | Sözleşme 5.10 |
 | Şema değişiklikleri yalnızca Alembic migration ile yapılır | `backend/alembic/versions/` | NFR-018 |
 | 200 görev / 20 üyeli projeyle test edilebilir | `python -m app.seed --buyuk` | NFR-011 |
 
-Durum ve öncelik, `users.role` ile aynı şekilde metin (`varchar`) olarak saklanır ve CHECK kısıtıyla korunur. Böylece SQLite (testler, varsayılan `.env`) ve PostgreSQL'de aynı şekilde çalışır; ileride yeni değer eklemek de tek bir migration ile yapılır.
+Görev durumu, öncelik ve bildirim türü, `users.role` ile aynı şekilde metin (`varchar`) olarak saklanır ve CHECK kısıtıyla korunur. Böylece SQLite (testler, varsayılan `.env`) ve PostgreSQL'de aynı şekilde çalışır; ileride yeni değer eklemek de tek bir migration ile yapılır.
 
 ## Tabloda tutulmayan, API'de hesaplanan alanlar
 
@@ -57,6 +65,7 @@ Durum ve öncelik, `users.role` ile aynı şekilde metin (`varchar`) olarak sakl
 - `Task.risk_level` (FR-070 – FR-072), `subtask_count`, `subtask_done_count`, `comment_count`, `file_count`
 - `ProjectMember.email`, `ProjectMember.system_role` (`users` tablosundan gelir)
 - `File.comment_count` (dosyanın yorum sayısı)
+- `Sprint.total_points`, `done_points`, `progress_percent` (FR-068), `is_active` (`app/services/sprints.py`)
 
 ## API katmanında kontrol edilecek kurallar
 
@@ -65,6 +74,8 @@ Durum ve öncelik, `users.role` ile aynı şekilde metin (`varchar`) olarak sakl
 - Üye projeden çıkarılınca o projedeki görevlerinin `assignee_id`'si `null` yapılır (5.10).
 - Alt görevin `project_id`'si ana görevinkiyle aynı olmalı (veritabanı bunu engellemez; alt görev uç noktası projeyi ana görevden alır).
 - Göreve eklenen etiketler aynı projeye ait olmalı (`label_ids`, 422 `VALIDATION_ERROR`).
+- Görevin sprinti aynı projeye ait olmalı (`sprint_id`, 422 `VALIDATION_ERROR`; veritabanı yalnızca sprintin var olduğunu kontrol eder).
+- Sprint ilerlemesi yalnızca aktif görevleri sayar; puansız görev 0 puandır (11.2, FR-068).
 - Dosyayı yalnızca yükleyen kişi veya Yönetici silebilir (8.4, `FORBIDDEN`); dosya depodan da silinir.
 - Göreve dosya yüklenirken görev aynı projeye ait olmalı (`TASK_NOT_FOUND`).
 - Daveti kabul ederken süresi dolmuş bağlantı reddedilir (`expires_at`, 5.9 `INVITE_INVALID`); zaten üye olan kullanıcı `ALREADY_MEMBER` alır.
@@ -73,7 +84,5 @@ Durum ve öncelik, `users.role` ile aynı şekilde metin (`varchar`) olarak sakl
 
 | Tablo | Sprint | Not |
 |---|---|---|
-| `notifications` | 6 | Bildirimler (FR-051) |
-| `sprints` | 6 | `tasks.sprint_id` için FK bu tabloyla eklenir |
 | `notification_preferences`, `password_reset_tokens` | 8 | Bildirim tercihleri, şifre sıfırlama |
 | `task_dependencies` | 9 | Görev bağımlılıkları (FR-040) |

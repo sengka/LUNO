@@ -18,6 +18,7 @@ from app.core.exceptions import (
     TaskNotFoundException,
     UnsupportedFileTypeException,
 )
+from app.core.pagination import MAX_PAGE
 from app.database import get_db
 from app.models.comment import Comment
 from app.models.file import ProjectFile
@@ -157,7 +158,7 @@ def upload_file(
 def list_files(
     project_id: int,
     task_id: int | None = Query(None, description="Yalnızca bu görevin dosyaları"),
-    page: int = Query(1, ge=1),
+    page: int = Query(1, ge=1, le=MAX_PAGE),
     limit: int = Query(10, ge=1, le=100),
     _membership: ProjectMember = Depends(get_project_member),
     db: Session = Depends(get_db),

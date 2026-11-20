@@ -30,5 +30,17 @@ class Priority(str, enum.Enum):
     YUKSEK = "YUKSEK"
 
 
+class NotificationType(str, enum.Enum):
+    """Bildirim türleri (sözleşme 2. bölüm, Notification nesnesi)."""
+
+    TASK_ASSIGNED = "TASK_ASSIGNED"  # FR-052
+    COMMENT_ADDED = "COMMENT_ADDED"  # FR-054
+    DUE_DATE_SOON = "DUE_DATE_SOON"  # FR-056
+    TASK_STALE = "TASK_STALE"  # FR-057
+    TASK_PENDING_APPROVAL = "TASK_PENDING_APPROVAL"  # FR-051
+    TASK_APPROVED = "TASK_APPROVED"  # FR-051
+    TASK_REJECTED = "TASK_REJECTED"  # FR-051
+
+
 # Efor puanı yalnızca Fibonacci değerleri olabilir (FR-036).
 STORY_POINT_VALUES = (1, 2, 3, 5, 8, 13)

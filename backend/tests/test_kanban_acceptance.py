@@ -14,6 +14,7 @@ from app.main import app
 from app.models.enums import TaskStatus
 from app.models.project import Project
 from app.models.project_member import ProjectMember
+from app.models.sprint import Sprint
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.task import TaskResponse
@@ -55,6 +56,11 @@ def board_case(db_session):
         for actor in ("admin", "owner", "colleague"):
             db.add(ProjectMember(project_id=project.id, user_id=users[actor].id,
                                  technical_role="QA"))
+    # tasks.sprint_id artık sprints tablosuna bağlı (#248): testin kullandığı 2 ve 3 numaralı sprintler.
+    for sprint_id in (2, 3):
+        db.add(Sprint(id=sprint_id, project_id=projects[0].id, name=f"Sprint {sprint_id}",
+                      start_date=date(2026, 10, 1), end_date=date(2026, 11, 30)))
+    db.flush()
     tasks = []
     for index, status in enumerate(TaskStatus):
         task = Task(project_id=projects[0].id, title=f"Parent {status.value}",
