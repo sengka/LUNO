@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, status, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
 from app.models.project import Project
+from app.models.project_invite import ProjectInvite
 from app.models.project_member import ProjectMember
 from app.models.task import Task
 from app.models.enums import ACTIVE_TASK_STATUSES, TaskStatus
@@ -291,7 +293,8 @@ def add_project_member(
     E-posta adresi ile projeye yeni ekip üyesi ekler (FR-021).
     Yalnızca YONETICI rolüne sahip ve projenin üyesi olan kullanıcılar ekleyebilir.
     """
-    target_user = db.query(User).filter(User.email == member_in.email).first()
+    normalized_email = member_in.email.strip().lower()
+    target_user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
     if not target_user:
         raise UserNotFoundException("Bu e-posta ile kayıtlı kullanıcı bulunamadı.")
 
@@ -351,6 +354,11 @@ def remove_project_member(
         Task.project_id == project_id,
         Task.assignee_id == user_id
     ).update({Task.assignee_id: None}, synchronize_session=False)
+
+    # Çıkarılan üyenin eski davet bağlantısıyla geri katılmasını engelle (#251)
+    db.query(ProjectInvite).filter(
+        ProjectInvite.project_id == project_id
+    ).delete(synchronize_session=False)
 
     db.delete(member)
     db.commit()

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, status, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -13,7 +14,8 @@ from app.schemas.user import (
 from app.core.security import (
     get_password_hash,
     verify_password,
-    create_access_token
+    create_access_token,
+    decode_access_token
 )
 from app.core.exceptions import (
     EmailAlreadyExistsException,
@@ -38,14 +40,15 @@ def register(
     Yeni kullanıcı kaydı oluşturur.
     Varsayılan rol: EKIP_UYESI
     """
-    # Check if email is already registered
-    existing_user = db.query(User).filter(User.email == user_in.email).first()
+    # Check if email is already registered (case-insensitive, #250)
+    normalized_email = user_in.email.strip().lower()
+    existing_user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
     if existing_user:
         raise EmailAlreadyExistsException()
 
     user = User(
         full_name=user_in.full_name,
-        email=user_in.email,
+        email=normalized_email,
         hashed_password=get_password_hash(user_in.password),
         role=SystemRole.EKIP_UYESI.value,
         avatar_url=None,
@@ -71,7 +74,8 @@ def login(
     E-posta ve şifre ile giriş yapar, 24 saat geçerli JWT döndürür.
     Kayıtsız e-posta veya yanlış şifrede aynı hata (INVALID_CREDENTIALS) döner.
     """
-    user = db.query(User).filter(User.email == login_in.email).first()
+    normalized_email = login_in.email.strip().lower()
+    user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
     if not user:
         raise InvalidCredentialsException()
 
@@ -100,11 +104,13 @@ def logout(
     db: Session = Depends(get_db)
 ):
     """
-    Oturumu sonlandırır ve mevcut token'ı geçersizler listesine ekler.
+    Oturumu sonlandırır ve mevcut token'ı jti (yoksa ham token) üzerinden geçersizler listesine ekler (#249).
     """
-    already_revoked = db.query(RevokedToken).filter(RevokedToken.token == raw_token).first()
+    payload = decode_access_token(raw_token) or {}
+    revoke_key = str(payload.get("jti") or raw_token)
+    already_revoked = db.query(RevokedToken).filter(RevokedToken.token == revoke_key).first()
     if not already_revoked:
-        revoked = RevokedToken(token=raw_token, created_at=datetime.now(timezone.utc))
+        revoked = RevokedToken(token=revoke_key, created_at=datetime.now(timezone.utc))
         db.add(revoked)
         db.commit()
 

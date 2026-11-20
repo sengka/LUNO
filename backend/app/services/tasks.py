@@ -15,8 +15,9 @@ from app.core.exceptions import (
     InvalidDateRangeException,
     NestedSubtaskNotAllowedException,
 )
-from app.models.enums import TaskStatus
+from app.models.enums import NotificationType, TaskStatus
 from app.models.label import Label
+from app.models.notification import Notification
 from app.models.project_member import ProjectMember
 from app.models.task import Task
 from app.models.user import SystemRole, User
@@ -102,6 +103,43 @@ def create_task(
     )
     task.labels = labels
     db.add(task)
+    db.flush()
+
+    if is_admin and assignee_id is not None and assignee_id != current_user.id:
+        db.add(
+            Notification(
+                user_id=assignee_id,
+                type=NotificationType.TASK_ASSIGNED,
+                message=f"{current_user.full_name} size '{task.title}' görevini atadı.",
+                project_id=project_id,
+                task_id=task.id,
+                is_read=False,
+                created_at=now,
+            )
+        )
+    elif not is_admin:
+        managers = (
+            db.query(User)
+            .join(ProjectMember, ProjectMember.user_id == User.id)
+            .filter(
+                ProjectMember.project_id == project_id,
+                User.role == SystemRole.YONETICI.value,
+            )
+            .all()
+        )
+        for manager in managers:
+            db.add(
+                Notification(
+                    user_id=manager.id,
+                    type=NotificationType.TASK_PENDING_APPROVAL,
+                    message=f"{current_user.full_name} '{task.title}' görevini onayınıza sundu.",
+                    project_id=project_id,
+                    task_id=task.id,
+                    is_read=False,
+                    created_at=now,
+                )
+            )
+
     db.commit()
     db.refresh(task)
     return task

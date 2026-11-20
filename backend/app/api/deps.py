@@ -26,13 +26,17 @@ def get_current_user(
     
     token = credentials.credentials
     
-    # Check if token has been revoked / logged out (US-003, Issue #71)
-    revoked = db.query(RevokedToken).filter(RevokedToken.token == token).first()
-    if revoked:
-        raise UnauthorizedException("Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.")
-    
     payload = decode_access_token(token)
     if not payload:
+        raise UnauthorizedException("Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.")
+    
+    # Check if token has been revoked / logged out via jti (US-003, #249) or raw token fallback
+    jti = payload.get("jti")
+    revoke_keys = [token]
+    if jti:
+        revoke_keys.append(str(jti))
+    revoked = db.query(RevokedToken).filter(RevokedToken.token.in_(revoke_keys)).first()
+    if revoked:
         raise UnauthorizedException("Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.")
     
     user_id = payload.get("sub")

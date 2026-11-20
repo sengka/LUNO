@@ -10,7 +10,8 @@ from app.models.project import Project
 from app.models.task import Task
 from app.models.label import Label
 from app.models.project_member import ProjectMember
-from app.models.enums import ACTIVE_TASK_STATUSES, TaskStatus
+from app.models.enums import ACTIVE_TASK_STATUSES, NotificationType, TaskStatus
+from app.models.notification import Notification
 from app.schemas.task import (
     TaskCreateRequest,
     TaskUpdateRequest,
@@ -635,8 +636,28 @@ def update_task_assignee(
         if not target_member:
             raise AssigneeNotMemberException()
 
+    previous_assignee_id = task.assignee_id
+    now = datetime.now(timezone.utc)
     task.assignee_id = assignee_in.assignee_id
-    task.updated_at = datetime.now(timezone.utc)
+    task.updated_at = now
+
+    if (
+        assignee_in.assignee_id is not None
+        and assignee_in.assignee_id != current_user.id
+        and assignee_in.assignee_id != previous_assignee_id
+    ):
+        db.add(
+            Notification(
+                user_id=assignee_in.assignee_id,
+                type=NotificationType.TASK_ASSIGNED,
+                message=f"{current_user.full_name} size '{task.title}' görevini atadı.",
+                project_id=task.project_id,
+                task_id=task.id,
+                is_read=False,
+                created_at=now,
+            )
+        )
+
     db.commit()
     db.refresh(task)
 

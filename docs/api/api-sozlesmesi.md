@@ -330,7 +330,7 @@ Yorum ya göreve (`task_id`) ya da dosyaya (`file_id`) bağlıdır (FR-050).
 |---|---|
 | `full_name` | Zorunlu, 2–100 karakter |
 | `email` | Zorunlu, geçerli e-posta |
-| `password` | Zorunlu, en az 8 karakter |
+| `password` | Zorunlu, en az 8 karakter, en fazla 72 bayt (UTF-8) |
 
 **Yanıt · 201:** **User** (rol her zaman `EKIP_UYESI`, FR-010). Frontend "Kayıt başarılı" mesajı gösterip giriş sayfasına yönlendirir (FR-002).
 

@@ -43,15 +43,63 @@ async def custom_api_exception_handler(request: Request, exc: CustomAPIException
         }
     )
 
+def _translate_validation_error(err: dict) -> str:
+    err_type = str(err.get("type", ""))
+    ctx = err.get("ctx") or {}
+    msg = err.get("msg", "Geçersiz değer.")
+
+    if "email" in err_type or (isinstance(msg, str) and "valid email" in msg.lower()):
+        return "Geçerli bir e-posta adresi giriniz."
+    if err_type == "value_error":
+        if isinstance(msg, str) and msg.startswith("Value error, "):
+            return msg[len("Value error, "):]
+        return str(msg)
+    if err_type == "missing":
+        return "Bu alan zorunludur."
+    if err_type == "string_too_short":
+        return f"En az {ctx.get('min_length')} karakter olmalıdır."
+    if err_type == "string_too_long":
+        return f"En fazla {ctx.get('max_length')} karakter olmalıdır."
+    if err_type == "string_type":
+        return "Metin değeri girilmelidir."
+    if err_type in ("int_parsing", "int_type"):
+        return "Geçerli bir tam sayı girilmelidir."
+    if err_type in ("float_parsing", "float_type"):
+        return "Geçerli bir sayı girilmelidir."
+    if err_type in ("bool_parsing", "bool_type"):
+        return "Geçerli bir mantıksal değer girilmelidir."
+    if err_type == "greater_than_equal":
+        return f"En az {ctx.get('ge')} olmalıdır."
+    if err_type == "greater_than":
+        return f"{ctx.get('gt')} değerinden büyük olmalıdır."
+    if err_type == "less_than_equal":
+        return f"En fazla {ctx.get('le')} olmalıdır."
+    if err_type == "less_than":
+        return f"{ctx.get('lt')} değerinden küçük olmalıdır."
+    if err_type in ("enum", "literal_error"):
+        return "Geçersiz değer seçildi."
+    if err_type in ("date_from_datetime_parsing", "date_parsing", "date_type"):
+        return "Geçerli bir tarih girilmelidir (YYYY-AA-GG)."
+    if err_type in ("datetime_parsing", "datetime_type"):
+        return "Geçerli bir tarih ve saat girilmelidir."
+    if err_type == "list_type":
+        return "Geçerli bir liste girilmelidir."
+    if err_type == "json_invalid":
+        return "Geçersiz JSON biçimi."
+    if "email" in err_type or (isinstance(msg, str) and "valid email" in msg.lower()):
+        return "Geçerli bir e-posta adresi giriniz."
+
+    if isinstance(msg, str) and msg.startswith("Value error, "):
+        return msg[len("Value error, "):]
+    return "Geçersiz değer."
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     fields = {}
     for err in exc.errors():
         field_name = err["loc"][-1] if err["loc"] else "general"
-        msg = err.get("msg", "Geçersiz değer")
-        if isinstance(msg, str) and msg.startswith("Value error, "):
-            msg = msg[len("Value error, "):]
-        fields[str(field_name)] = msg
+        fields[str(field_name)] = _translate_validation_error(err)
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
