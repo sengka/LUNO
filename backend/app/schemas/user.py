@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, EmailStr, Field, field_serializer, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, field_serializer, field_validator, ConfigDict
 from app.models.user import SystemRole
 
 class UserBase(BaseModel):
@@ -10,7 +10,14 @@ class UserBase(BaseModel):
 class UserRegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100, description="Kullanıcı ad soyad (2-100 karakter)")
     email: EmailStr = Field(..., description="Geçerli e-posta adresi")
-    password: str = Field(..., min_length=8, description="En az 8 karakterli şifre")
+    password: str = Field(..., min_length=8, description="En az 8 karakterli, en fazla 72 baytlık şifre")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_byte_length(cls, v: str) -> str:
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Şifre en fazla 72 bayt olabilir.")
+        return v
 
 class LoginRequest(BaseModel):
     email: EmailStr = Field(..., description="Kayıtlı e-posta adresi")

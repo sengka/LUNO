@@ -234,3 +234,12 @@ class SprintNotFoundException(CustomAPIException):
             code="SPRINT_NOT_FOUND",
             message=message
         )
+
+
+class NotificationNotFoundException(CustomAPIException):
+    def __init__(self, message: str = "Bildirim bulunamadı."):
+        super().__init__(
+            status_code=404,
+            code="NOTIFICATION_NOT_FOUND",
+            message=message
+        )
