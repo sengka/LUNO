@@ -1,12 +1,61 @@
+import logging
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import settings
 from app.api.v1.api import api_router
 from app.core.exceptions import CustomAPIException
+
+logger = logging.getLogger(__name__)
+
+
+class InternalErrorMiddleware:
+    """Beklenmeyen 500 hatalarını CORS katmanının içinde yakalar (#252).
+
+    Starlette'te `@app.exception_handler(Exception)` CORS middleware'inin dışında çalışır;
+    bu yüzden tarayıcı 500 yanıtını CORS/bağlantı hatası gibi görür. Bu middleware CORS'tan
+    önce eklendiği için CORS'un içinde çalışır ve sözleşme formatında 500 INTERNAL_ERROR döner.
+    """
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        response_started = False
+
+        async def tracked_send(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, tracked_send)
+        except Exception:
+            logger.exception("Beklenmeyen sunucu hatası")
+            if response_started:
+                raise
+            response = JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "Beklenmeyen bir hata oluştu.",
+                        "fields": None,
+                        "details": None,
+                    }
+                },
+            )
+            await response(scope, receive, send)
+
 
 # Tablolar uygulama açılışında oluşturulmaz; şema yalnızca Alembic ile yönetilir (NFR-018).
 # Kurulumda bir kez: alembic upgrade head
@@ -19,7 +68,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS setup
+# İç katman: beklenmeyen 500 hatalarını yakalar (CORS'un içinde kalır)
+app.add_middleware(InternalErrorMiddleware)
+
+# Dış katman: CORS başlıklarını tüm yanıtlara (500 dahil) ekler
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,

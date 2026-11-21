@@ -236,6 +236,15 @@ class SprintNotFoundException(CustomAPIException):
         )
 
 
+class SprintOverlapException(CustomAPIException):
+    def __init__(self, message: str = "Bu tarihler başka bir sprintle çakışıyor."):
+        super().__init__(
+            status_code=400,
+            code="SPRINT_OVERLAP",
+            message=message
+        )
+
+
 class NotificationNotFoundException(CustomAPIException):
     def __init__(self, message: str = "Bildirim bulunamadı."):
         super().__init__(
