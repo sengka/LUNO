@@ -13,6 +13,9 @@ declare module '@tanstack/react-query' {
 
 // US-005: Yetkisiz bir işlem denendiğinde (403) ortak uyarı mesajı (FR-012)
 const mutationCache = new MutationCache({
+  onSuccess: () => {
+    void queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  },
   onError: (error, _variables, _context, mutation) => {
     if (error instanceof ApiError && error.status === 403 && !mutation.meta?.skipForbiddenToast) {
       toast.error(error.message || 'Bu işlem için yetkiniz yok.')
