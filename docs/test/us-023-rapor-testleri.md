@@ -84,3 +84,9 @@ Backend'de:
 Frontend'de `npm.cmd ci`, `npm.cmd run lint`, `npm.cmd test`, `npm.cmd run build`.
 
 PR inceleme/onayı ekipten beklenir; onay gelmeden “PR açıldı ve onaylandı” kutusu işaretlenmez. CI ve ekip onayı PR üzerinde ayrıca izlenir; bu rapor yerel test sonuçlarını içerir.
+
+## CI gün sınırı kontrolü (2026-11-23)
+
+İlk CI çalışmasında PostgreSQL migration ve frontend geçti; backend 785 geçti / 5 sınır testi başarısız oldu. Linux SQLite date() dönüşümü 23:59:59.999999 değerini sonraki güne yuvarladığından gün gruplaması ISO tarih öneki üzerinden yapıldı. Beklentiler gevşetilmedi; düzeltmeden sonra yerelde 37 rapor testi yeniden geçti. Son tam CI sonucu [PR #274](https://github.com/sengka/LUNO/pull/274/checks) üzerinden izlenebilir. İlk tam yerel 790 sonucu önceki kod sürümüne aittir; son sürüm tam regresyonu CI doğrular.
+
+Hata kaydı: [#273](https://github.com/sengka/LUNO/issues/273). PR: [#274](https://github.com/sengka/LUNO/pull/274).
