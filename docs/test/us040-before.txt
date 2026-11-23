@@ -1,0 +1,170 @@
+...........................................................FFF.......... [ 80%]
+..................                                                       [100%]
+================================== FAILURES ===================================
+_________ test_null_required_patch_fields_are_validation_errors[name] _________
+tests\test_sprint_planning_acceptance.py:185: in test_null_required_patch_fields_are_validation_errors
+    assert response.status_code == 422, response.text
+E   AssertionError: {"error":{"code":"CONFLICT","message":"Bu i�lem ba�ka bir i�lemle �ak��t�. L�tfen sayfay� yenileyip tekrar deneyin.","fields":null,"details":null}}
+E   assert 409 == 422
+E    +  where 409 = <Response [409 Conflict]>.status_code
+______ test_null_required_patch_fields_are_validation_errors[start_date] ______
+tests\test_sprint_planning_acceptance.py:185: in test_null_required_patch_fields_are_validation_errors
+    assert response.status_code == 422, response.text
+E   AssertionError: {"error":{"code":"INTERNAL_ERROR","message":"Beklenmeyen bir hata olu�tu.","fields":null,"details":null}}
+E   assert 500 == 422
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+------------------------------ Captured log call ------------------------------
+ERROR    app.main:main.py:43 Beklenmeyen sunucu hatas�
+Traceback (most recent call last):
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\app\main.py", line 41, in __call__
+    await self.app(scope, receive, tracked_send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1850, in _handle_selected
+    await route.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 374, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\telemetry\_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\app\api\v1\sprints.py", line 152, in update_sprint
+    _check_sprint_dates(
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\app\api\v1\sprints.py", line 55, in _check_sprint_dates
+    if end_date < start_date:
+       ^^^^^^^^^^^^^^^^^^^^^
+TypeError: '<' not supported between instances of 'datetime.date' and 'NoneType'
+_______ test_null_required_patch_fields_are_validation_errors[end_date] _______
+tests\test_sprint_planning_acceptance.py:185: in test_null_required_patch_fields_are_validation_errors
+    assert response.status_code == 422, response.text
+E   AssertionError: {"error":{"code":"INTERNAL_ERROR","message":"Beklenmeyen bir hata olu�tu.","fields":null,"details":null}}
+E   assert 500 == 422
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+------------------------------ Captured log call ------------------------------
+ERROR    app.main:main.py:43 Beklenmeyen sunucu hatas�
+Traceback (most recent call last):
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\app\main.py", line 41, in __call__
+    await self.app(scope, receive, tracked_send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1850, in _handle_selected
+    await route.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\routing.py", line 374, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\telemetry\_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\app\api\v1\sprints.py", line 152, in update_sprint
+    _check_sprint_dates(
+  File "C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\app\api\v1\sprints.py", line 55, in _check_sprint_dates
+    if end_date < start_date:
+       ^^^^^^^^^^^^^^^^^^^^^
+TypeError: '<' not supported between instances of 'NoneType' and 'datetime.date'
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_sprint_planning_acceptance.py: 19 warnings
+  C:\Users\Hakan\Documents\Codex\2026-10-19\merhaba-ben-yaz-l-m-m\work\LUNO-us011-current\backend\.venv\Lib\site-packages\starlette\_exception_handler.py:59: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    response = await handler(conn, exc)  # type: ignore[arg-type]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_sprint_planning_acceptance.py::test_null_required_patch_fields_are_validation_errors[name]
+FAILED tests/test_sprint_planning_acceptance.py::test_null_required_patch_fields_are_validation_errors[start_date]
+FAILED tests/test_sprint_planning_acceptance.py::test_null_required_patch_fields_are_validation_errors[end_date]
+3 failed, 87 passed, 20 warnings in 2.29s
