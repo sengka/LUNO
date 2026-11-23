@@ -1,0 +1,9 @@
+{
+  "date": "2026-11-23",
+  "database": "isolated SQLite copy",
+  "records_preserved": 5,
+  "downgrade_0006": "passed",
+  "upgrade_0007": "passed",
+  "legacy_done_backfilled": 2,
+  "limitation": "legacy DONE gets existing updated_at estimate; actual old completion cannot be recovered; downgrade drops completed_at values"
+}
