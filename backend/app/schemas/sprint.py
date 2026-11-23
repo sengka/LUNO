@@ -31,6 +31,14 @@ class SprintUpdate(BaseModel):
     end_date: Optional[date] = None
     capacity_points: Optional[int] = Field(default=None, gt=0)
 
+    @field_validator("name", "start_date", "end_date", mode="before")
+    @classmethod
+    def reject_null_required_fields(cls, v):
+        # Omitted PATCH fields are unchanged; explicit null must not reach NOT NULL columns.
+        if v is None:
+            raise ValueError("Bu alan boş bırakılamaz.")
+        return v
+
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: Optional[str]) -> Optional[str]:
