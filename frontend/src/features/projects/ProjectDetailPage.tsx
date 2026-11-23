@@ -1,3 +1,4 @@
+import { ActiveSprintProgress } from './ActiveSprintProgress'
 import { lazy, Suspense, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -255,6 +256,8 @@ function ProjectDetailContent() {
         </dl>
       </section>
 
+      <ActiveSprintProgress projectId={project.id} />
+      {isAdmin && <Link to={`/projeler/${project.id}/raporlar`} className="text-brand underline">Proje raporları</Link>}
       <ProjectMembers projectId={project.id} />
             {isAdmin && <ProjectInvitePanel projectId={project.id} />}
     </div>

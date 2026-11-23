@@ -1,3 +1,4 @@
+import { ReportsPage } from '@/pages/ReportsPage'
 import { Navigate, Route, Routes } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthPage } from '@/features/auth/AuthPage'
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/gorevler/:taskId" element={<TaskDetailPage />} />
 
           <Route element={<AdminRoute />}>
+            <Route path="/projeler/:projectId/raporlar" element={<ReportsPage />} />
             <Route path="/kullanicilar" element={<UsersPage />} />
           </Route>
         </Route>
