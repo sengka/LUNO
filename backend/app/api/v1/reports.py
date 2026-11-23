@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func
+from sqlalchemy import String, cast, func
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_project_member, require_admin
@@ -140,7 +140,9 @@ def get_period_report(
     end = datetime.combine(to_date, time.max, timezone.utc)
 
     def counts_by_day(timestamp, completed=False):
-        day = func.date(timestamp)
+        # SQLite date() can round 23:59:59.999999 into the next day.
+        # ISO timestamps retain their exact calendar day on both supported DBs.
+        day = func.substr(cast(timestamp, String), 1, 10)
         query = db.query(day, func.count(Task.id)).filter(
             Task.project_id == project_id,
             Task.status.in_(ACTIVE_TASK_STATUSES),
