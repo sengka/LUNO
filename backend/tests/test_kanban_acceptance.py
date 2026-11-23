@@ -169,8 +169,11 @@ def test_card_move_patch_persists_status(client, db_session, board_case, actor, 
     assert response.json()["status"] == target
     after = row(db_session, task)
     assert after["status"].value == target
-    assert {k: v for k, v in after.items() if k not in ("status", "updated_at")} == {
-        k: v for k, v in before.items() if k not in ("status", "updated_at")}
+    # US-023 records the DONE transition independently from later edits.
+    assert after["completed_at"] == (after["updated_at"] if target == "DONE" else None)
+    changed_fields = ("status", "updated_at", "completed_at")
+    assert {k: v for k, v in after.items() if k not in changed_fields} == {
+        k: v for k, v in before.items() if k not in changed_fields}
 
 
 @pytest.mark.parametrize("actor", ["colleague", "outsider", "external_admin"])
