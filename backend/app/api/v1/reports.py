@@ -1,7 +1,7 @@
 """Raporlar (US-023, FR-062, FR-063; sözleşme 10.2 – 10.3)."""
 
 import calendar
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, status
@@ -135,27 +135,28 @@ def get_period_report(
     ref_date = target_date or today_utc()
     from_date, to_date = _period_bounds(period, ref_date)
 
-    tasks = (
-        db.query(Task)
-        .filter(
+    # Yalnızca gün/toplam sütunlarını getir; Task nesneleri ve ilişkilerini yükleme.
+    start = datetime.combine(from_date, time.min, timezone.utc)
+    end = datetime.combine(to_date, time.max, timezone.utc)
+
+    def counts_by_day(timestamp, completed=False):
+        day = func.date(timestamp)
+        query = db.query(day, func.count(Task.id)).filter(
             Task.project_id == project_id,
             Task.status.in_(ACTIVE_TASK_STATUSES),
+            timestamp >= start,
+            timestamp <= end,
         )
-        .all()
-    )
+        if completed:
+            query = query.filter(Task.status == TaskStatus.DONE)
+        return {
+            date.fromisoformat(value) if isinstance(value, str) else value: count
+            for value, count in query.group_by(day).all()
+        }
 
-    created_by_day: dict[date, int] = {}
-    completed_by_day: dict[date, int] = {}
-
-    for task in tasks:
-        if task.created_at is not None:
-            c_day = task.created_at.date()
-            if from_date <= c_day <= to_date:
-                created_by_day[c_day] = created_by_day.get(c_day, 0) + 1
-        if task.status == TaskStatus.DONE and task.updated_at is not None:
-            u_day = task.updated_at.date()
-            if from_date <= u_day <= to_date:
-                completed_by_day[u_day] = completed_by_day.get(u_day, 0) + 1
+    created_by_day = counts_by_day(Task.created_at)
+    # Migration öncesi DONE kayıtlarının bitiş geçmişi bilinmediğinden eski tahmin korunur.
+    completed_by_day = counts_by_day(func.coalesce(Task.completed_at, Task.updated_at), completed=True)
 
     series: list[PeriodSeriesItem] = []
     current = from_date
