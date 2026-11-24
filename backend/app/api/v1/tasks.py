@@ -48,6 +48,13 @@ from app.core.pagination import MAX_PAGE
 router = APIRouter(tags=["Görevler"])
 
 
+def _preserve_legacy_completion_time(task: Task) -> None:
+    # Eski kayıtlarda gerçek bitiş geçmişi yok; ilk düzenlemede mevcut tahmini koru.
+    if task.status == TaskStatus.DONE and task.completed_at is None:
+        task.completed_at = task.updated_at
+
+
+
 def _user_summary(user: User | None) -> UserSummary | None:
     if user is None:
         return None
@@ -542,6 +549,7 @@ def update_task(
     if "sprint_id" in update_data:
         validate_sprint_for_project(db, task.project_id, update_data["sprint_id"])
 
+    _preserve_legacy_completion_time(task)
     for field, value in update_data.items():
         setattr(task, field, value)
 
@@ -636,6 +644,7 @@ def update_task_assignee(
         if not target_member:
             raise AssigneeNotMemberException()
 
+    _preserve_legacy_completion_time(task)
     previous_assignee_id = task.assignee_id
     now = datetime.now(timezone.utc)
     task.assignee_id = assignee_in.assignee_id
@@ -700,8 +709,16 @@ def update_task_status(
     if task.status in (TaskStatus.ONAY_BEKLIYOR, TaskStatus.REDDEDILDI):
         raise TaskNotActiveException()
 
-    task.status = TaskStatus(status_in.status.value)
-    task.updated_at = datetime.now(timezone.utc)
+    _preserve_legacy_completion_time(task)
+    new_status = TaskStatus(status_in.status.value)
+    now = datetime.now(timezone.utc)
+    if new_status == TaskStatus.DONE:
+        if task.status != TaskStatus.DONE:
+            task.completed_at = now
+    else:
+        task.completed_at = None
+    task.status = new_status
+    task.updated_at = now
     db.commit()
     db.refresh(task)
 

@@ -1,0 +1,83 @@
+{
+  "date": "2026-11-23",
+  "environment": "Windows, Python 3.12.14, in-memory SQLite, FastAPI TestClient; 10000 tasks; five sequential reads per endpoint; no concurrent-user SLA claim",
+  "measurement_note": "latencies include auth, membership, SQL and serialization; select budget <=8 is a regression guard, not a product latency requirement",
+  "measurements": {
+    "before": {
+      "members": {
+        "tasks": 10000,
+        "elapsed_ms": [
+          22.899,
+          21.457,
+          48.81,
+          36.212,
+          27.363
+        ],
+        "median_ms": 27.363,
+        "select_counts": [
+          7,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      "period": {
+        "tasks": 10000,
+        "elapsed_ms": [
+          731.704,
+          590.898,
+          478.942,
+          590.806,
+          517.115
+        ],
+        "median_ms": 590.806,
+        "select_counts": [
+          65,
+          65,
+          65,
+          65,
+          65
+        ]
+      }
+    },
+    "after": {
+      "members": {
+        "tasks": 10000,
+        "elapsed_ms": [
+          19.184,
+          83.379,
+          19.991,
+          20.526,
+          21.924
+        ],
+        "median_ms": 20.526,
+        "select_counts": [
+          7,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      "period": {
+        "tasks": 10000,
+        "elapsed_ms": [
+          36.961,
+          30.642,
+          35.002,
+          30.48,
+          38.281
+        ],
+        "median_ms": 35.002,
+        "select_counts": [
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      }
+    }
+  }
+}

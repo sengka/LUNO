@@ -76,7 +76,15 @@ def test_all_active_transitions_persist_without_other_changes(client, db_session
     after = snapshot(db_session, task)
     assert after["status"] == TaskStatus(target)
     assert after["updated_at"] > before["updated_at"]
-    for field in before.keys() - {"status", "updated_at"}:
+    if target == "DONE":
+        expected_completion = (
+            before["completed_at"] or before["updated_at"]
+            if source == "DONE" else after["updated_at"]
+        )
+        assert after["completed_at"] == expected_completion
+    else:
+        assert after["completed_at"] is None
+    for field in before.keys() - {"status", "updated_at", "completed_at"}:
         assert after[field] == before[field], field
     assert snapshot(db_session, case["sibling"]) == sibling_before
 

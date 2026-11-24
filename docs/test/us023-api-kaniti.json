@@ -1,0 +1,640 @@
+{
+  "date": "2026-11-23",
+  "environment": "isolated localhost HTTP; synthetic accounts; no tokens",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/members",
+      "actor": "admin",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "members": [
+          {
+            "user": {
+              "id": 1,
+              "full_name": "Rapor QA admin",
+              "avatar_url": null
+            },
+            "counts": {
+              "TODO": 0,
+              "IN_PROGRESS": 0,
+              "REVIEW_TESTING": 0,
+              "DONE": 0
+            },
+            "done_points": 0
+          },
+          {
+            "user": {
+              "id": 2,
+              "full_name": "Rapor QA member",
+              "avatar_url": null
+            },
+            "counts": {
+              "TODO": 1,
+              "IN_PROGRESS": 1,
+              "REVIEW_TESTING": 1,
+              "DONE": 2
+            },
+            "done_points": 6
+          },
+          {
+            "user": {
+              "id": 3,
+              "full_name": "Rapor QA zero",
+              "avatar_url": null
+            },
+            "counts": {
+              "TODO": 0,
+              "IN_PROGRESS": 0,
+              "REVIEW_TESTING": 0,
+              "DONE": 0
+            },
+            "done_points": 0
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/members?sprint_id=1",
+      "actor": "admin",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "members": [
+          {
+            "user": {
+              "id": 1,
+              "full_name": "Rapor QA admin",
+              "avatar_url": null
+            },
+            "counts": {
+              "TODO": 0,
+              "IN_PROGRESS": 0,
+              "REVIEW_TESTING": 0,
+              "DONE": 0
+            },
+            "done_points": 0
+          },
+          {
+            "user": {
+              "id": 2,
+              "full_name": "Rapor QA member",
+              "avatar_url": null
+            },
+            "counts": {
+              "TODO": 1,
+              "IN_PROGRESS": 1,
+              "REVIEW_TESTING": 1,
+              "DONE": 1
+            },
+            "done_points": 3
+          },
+          {
+            "user": {
+              "id": 3,
+              "full_name": "Rapor QA zero",
+              "avatar_url": null
+            },
+            "counts": {
+              "TODO": 0,
+              "IN_PROGRESS": 0,
+              "REVIEW_TESTING": 0,
+              "DONE": 0
+            },
+            "done_points": 0
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period?period=DAILY&date=2026-11-22",
+      "actor": "admin",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "period": "DAILY",
+        "from": "2026-11-22",
+        "to": "2026-11-22",
+        "completed_count": 1,
+        "created_count": 1,
+        "series": [
+          {
+            "date": "2026-11-22",
+            "completed": 1,
+            "created": 1
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period?period=WEEKLY&date=2026-11-23",
+      "actor": "admin",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "period": "WEEKLY",
+        "from": "2026-11-23",
+        "to": "2026-11-29",
+        "completed_count": 1,
+        "created_count": 4,
+        "series": [
+          {
+            "date": "2026-11-23",
+            "completed": 1,
+            "created": 4
+          },
+          {
+            "date": "2026-11-24",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-25",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-26",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-27",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-28",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-29",
+            "completed": 0,
+            "created": 0
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period?period=MONTHLY&date=2026-11-23",
+      "actor": "admin",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "period": "MONTHLY",
+        "from": "2026-11-01",
+        "to": "2026-11-30",
+        "completed_count": 2,
+        "created_count": 5,
+        "series": [
+          {
+            "date": "2026-11-01",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-02",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-03",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-04",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-05",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-06",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-07",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-08",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-09",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-10",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-11",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-12",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-13",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-14",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-15",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-16",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-17",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-18",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-19",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-20",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-21",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-22",
+            "completed": 1,
+            "created": 1
+          },
+          {
+            "date": "2026-11-23",
+            "completed": 1,
+            "created": 4
+          },
+          {
+            "date": "2026-11-24",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-25",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-26",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-27",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-28",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-29",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-30",
+            "completed": 0,
+            "created": 0
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/2/reports/period?period=MONTHLY&date=2026-11-23",
+      "actor": "admin",
+      "expected_status": 200,
+      "actual_status": 200,
+      "response": {
+        "period": "MONTHLY",
+        "from": "2026-11-01",
+        "to": "2026-11-30",
+        "completed_count": 0,
+        "created_count": 0,
+        "series": [
+          {
+            "date": "2026-11-01",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-02",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-03",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-04",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-05",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-06",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-07",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-08",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-09",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-10",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-11",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-12",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-13",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-14",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-15",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-16",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-17",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-18",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-19",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-20",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-21",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-22",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-23",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-24",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-25",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-26",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-27",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-28",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-29",
+            "completed": 0,
+            "created": 0
+          },
+          {
+            "date": "2026-11-30",
+            "completed": 0,
+            "created": 0
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/members",
+      "actor": "member",
+      "expected_status": 403,
+      "actual_status": 403,
+      "response": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "Bu işlem için yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/members",
+      "actor": "outsider",
+      "expected_status": 403,
+      "actual_status": 403,
+      "response": {
+        "error": {
+          "code": "PROJECT_ACCESS_DENIED",
+          "message": "Bu projeye erişim yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/members",
+      "actor": "anonymous",
+      "expected_status": 401,
+      "actual_status": 401,
+      "response": {
+        "error": {
+          "code": "UNAUTHORIZED",
+          "message": "Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period",
+      "actor": "member",
+      "expected_status": 403,
+      "actual_status": 403,
+      "response": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "Bu işlem için yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period",
+      "actor": "outsider",
+      "expected_status": 403,
+      "actual_status": 403,
+      "response": {
+        "error": {
+          "code": "PROJECT_ACCESS_DENIED",
+          "message": "Bu projeye erişim yetkiniz yok.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period",
+      "actor": "anonymous",
+      "expected_status": 401,
+      "actual_status": 401,
+      "response": {
+        "error": {
+          "code": "UNAUTHORIZED",
+          "message": "Oturumunuzun süresi doldu, lütfen tekrar giriş yapın.",
+          "fields": null,
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period?date=2026-02-29",
+      "actor": "admin",
+      "expected_status": 422,
+      "actual_status": 422,
+      "response": {
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Lütfen hatalı alanları düzeltin.",
+          "fields": {
+            "date": "Geçerli bir tarih girilmelidir (YYYY-AA-GG)."
+          },
+          "details": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/reports/period?period=YEARLY",
+      "actor": "admin",
+      "expected_status": 422,
+      "actual_status": 422,
+      "response": {
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Lütfen hatalı alanları düzeltin.",
+          "fields": {
+            "period": "Geçersiz değer seçildi."
+          },
+          "details": null
+        }
+      }
+    }
+  ]
+}
