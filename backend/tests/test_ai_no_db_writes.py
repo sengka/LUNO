@@ -38,6 +38,16 @@ AI_ENDPOINTS = [
         "/api/v1/ai/tasks/{task_id}/suggest-points",
         llm_output={"story_points": 5, "reason": "Birden fazla ekran içeriyor."},
     ),
+    AIEndpoint(
+        "POST",
+        "/api/v1/ai/projects/{project_id}/weekly-summary",
+        llm_output={"summary": "Bu hafta bir görev tamamlandı."},
+    ),
+    AIEndpoint(
+        "POST",
+        "/api/v1/ai/tasks/{task_id}/summarize-comments",
+        llm_output={"decisions": ["API önce yazılacak."], "open_questions": [], "summary": "Ekip API'de anlaştı."},
+    ),
 ]
 
 

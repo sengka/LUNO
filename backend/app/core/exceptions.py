@@ -252,3 +252,14 @@ class NotificationNotFoundException(CustomAPIException):
             code="NOTIFICATION_NOT_FOUND",
             message=message
         )
+
+
+class NotEnoughCommentsException(CustomAPIException):
+    """Sözleşme 13.6: yorum zinciri özeti için görevde en az 5 yorum olmalı (FR-082)."""
+
+    def __init__(self, message: str = "Özet için görevde en az 5 yorum olmalıdır."):
+        super().__init__(
+            status_code=400,
+            code="NOT_ENOUGH_COMMENTS",
+            message=message
+        )

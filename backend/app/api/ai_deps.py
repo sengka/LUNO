@@ -12,14 +12,15 @@ Kontrol sırası:
 2. Yönetici gerekiyorsa sistem rolü YONETICI mi?    → 403 FORBIDDEN
 3. Görev / proje var mı?                            → 404 TASK_NOT_FOUND / PROJECT_NOT_FOUND
 4. Kullanıcı projenin üyesi mi? (1.2)               → 403 PROJECT_ACCESS_DENIED
-5. Dakikada 10 istek sınırı aşıldı mı?              → 429 RATE_LIMITED
+5. Uç noktaya özel ön kontrol (varsa; ör. 13.6'da en az 5 yorum → 400 NOT_ENOUGH_COMMENTS)
+6. Dakikada 10 istek sınırı aşıldı mı?              → 429 RATE_LIMITED
 
-İstek sınırı en sona konur: yalnızca gerçekten modele gidecek istekler sayılır, yetki veya
-bulunamadı hatası alan istekler kullanıcının hakkından düşmez.
+İstek sınırı en sona konur: yalnızca gerçekten modele gidecek istekler sayılır, yetki,
+bulunamadı veya ön kontrol hatası alan istekler kullanıcının hakkından düşmez.
 """
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Optional
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -60,8 +61,15 @@ def _ensure_member(db: Session, project_id: int, user_id: int) -> None:
         raise ProjectAccessDeniedException()
 
 
-def ai_task_access(admin_only: bool) -> Callable[..., AITaskContext]:
-    """Adreste {task_id} olan AI uç noktaları için koruma üretir."""
+TaskPrecheck = Callable[[Session, Task], None]
+
+
+def ai_task_access(admin_only: bool, precheck: Optional[TaskPrecheck] = None) -> Callable[..., AITaskContext]:
+    """Adreste {task_id} olan AI uç noktaları için koruma üretir.
+
+    precheck: Modele gitmeden önce çalışan, uç noktaya özel kontrol. Hata yükseltirse istek
+    sınırından düşülmez.
+    """
     role_check = require_admin if admin_only else get_current_user
 
     def dependency(
@@ -74,6 +82,8 @@ def ai_task_access(admin_only: bool) -> Callable[..., AITaskContext]:
         if not task:
             raise TaskNotFoundException()
         _ensure_member(db, task.project_id, current_user.id)
+        if precheck is not None:
+            precheck(db, task)
         limiter.check(current_user.id)
         return AITaskContext(user=current_user, task=task)
 
