@@ -2,29 +2,25 @@
 
 Kurallar (13.1):
 - Bu uç noktalar veritabanına yazmaz, yalnızca öneri döndürür (FR-078, FR-086).
+  tests/test_ai_no_db_writes.py her AI uç noktası için bunu doğrular; yeni uç nokta oraya eklenmelidir.
+- Yetki, proje üyeliği ve dakikada 10 istek sınırı ortak korumadadır (app/api/ai_deps.py, #288).
 - Groq/Gemini'ye doğrudan istek atılmaz; tüm çağrılar LLMService'ten geçer.
   Yedeğe geçiş (FR-083) ve ikisi de düşerse 503 LLM_UNAVAILABLE (FR-084) serviste yapılır.
-- Kullanıcı başına dakikada en fazla 10 LLM isteği; aşılırsa 429 RATE_LIMITED (US-026, #259).
-  Yalnızca yetki kontrolünden geçen, yani gerçekten modele gidecek istekler sayılır.
+- Kullanıcı metni ortak şablonla verilir: system_prompt(...) ve user_data(...) (istem enjeksiyonuna karşı).
 - Kullanıcı metni (görev başlığı/açıklaması) günlüğe yazılmaz.
 """
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
-from app.core.exceptions import ProjectAccessDeniedException, TaskNotFoundException
-from app.database import get_db
-from app.models.project_member import ProjectMember
+from app.api.ai_deps import AITaskContext, admin_task_access
 from app.models.task import Task
-from app.models.user import User
 from app.schemas.ai import StoryPointsSuggestion, SuggestPointsResponse
-from app.services.llm import LLMService, RateLimiter, get_llm_rate_limiter, get_llm_service
+from app.services.llm import LLMService, get_llm_service, system_prompt, user_data
 
 router = APIRouter(prefix="/ai", tags=["Yapay Zekâ"])
 
 # #257 denemesinde Türkçe örneklerle 10/10 geçerli puan veren istem.
-SUGGEST_POINTS_SYSTEM_PROMPT = (
+SUGGEST_POINTS_INSTRUCTIONS = (
     "Sen bir Scrum ekibine yardım eden asistansın. Sana bir görevin başlığı ve açıklaması verilecek. "
     "Görevin eforunu yalnızca şu değerlerden biriyle tahmin et: 1, 2, 3, 5, 8, 13. "
     "1: birkaç dakikalık çok küçük değişiklik; 3: tek ekran veya tek API; "
@@ -45,11 +41,8 @@ def _task_text(task: Task) -> str:
     summary="Efor puanı önerisi (US-052 / 13.4)",
 )
 def suggest_story_points(
-    task_id: int,
-    current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    ctx: AITaskContext = Depends(admin_task_access),
     llm: LLMService = Depends(get_llm_service),
-    limiter: RateLimiter = Depends(get_llm_rate_limiter),
 ):
     """
     Görev başlığı ve açıklamasına göre efor puanı önerir (US-052, FR-080, sözleşme 13.4).
@@ -61,20 +54,11 @@ def suggest_story_points(
     - İki LLM servisi de yanıt vermezse 503 LLM_UNAVAILABLE
     Öneri kaydedilmez; kullanıcı onaylarsa frontend görev güncelleme uç noktasını çağırır.
     """
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise TaskNotFoundException()
-
-    member = (
-        db.query(ProjectMember)
-        .filter(ProjectMember.project_id == task.project_id, ProjectMember.user_id == current_user.id)
-        .first()
+    result = llm.complete_json(
+        system_prompt(SUGGEST_POINTS_INSTRUCTIONS),
+        user_data(_task_text(ctx.task)),
+        StoryPointsSuggestion,
     )
-    if not member:
-        raise ProjectAccessDeniedException()
-
-    limiter.check(current_user.id)
-    result = llm.complete_json(SUGGEST_POINTS_SYSTEM_PROMPT, _task_text(task), StoryPointsSuggestion)
     return SuggestPointsResponse(
         provider=result.provider,
         story_points=result.data.story_points,

@@ -1,6 +1,8 @@
 """Tüm LLM çağrılarının geçtiği tek servis katmanı (teknoloji kararları, bölüm 6).
 
 - Önce ana servis (Groq), hata veya zaman aşımında yedek servis (Gemini) denenir (FR-083).
+- Groq geçici bir hata verirse (429 veya bağlantı kurulamadı) yedeğe geçmeden bir kez daha
+  denenir (#288). Zaman aşımında tekrar denenmez; 10 sn kuralı korunur (sözleşme 13.1).
 - Yanıt JSON olarak istenir ve Pydantic şemasıyla doğrulanır; bozuk yanıt da yedeğe geçirir.
 - İki servis de başarısız olursa LLMUnavailableException (503, LLM_UNAVAILABLE) yükselir (FR-084).
 - Bu katman veritabanına yazmaz; yalnızca öneri döndürür (FR-078, FR-086).
@@ -51,6 +53,10 @@ def parse_json_response(text: str, schema: Type[T]) -> T:
         raise LLMProviderError("yanıt beklenen JSON şemasına uymuyor") from exc
 
 
+# Geçici hatada bir kez daha denenecek servisler (#288: yalnızca ana servis Groq).
+RETRY_ONCE_PROVIDERS = frozenset({"groq"})
+
+
 class LLMService:
     def __init__(self, providers: Sequence[LLMProvider], timeout: float):
         # Anahtarı olmayan servis kullanılmaz.
@@ -59,12 +65,18 @@ class LLMService:
 
     def complete_json(self, system: str, user: str, schema: Type[T]) -> LLMResult[T]:
         for provider in self.providers:
-            try:
-                raw = provider.generate_json(system, user, self.timeout)
-                return LLMResult(provider=provider.name, data=parse_json_response(raw, schema))
-            except LLMProviderError as exc:
-                # Kullanıcı metni günlüğe yazılmaz; yalnızca hangi servisin neden düştüğü.
-                logger.warning("LLM servisi başarısız, yedeğe geçiliyor: %s", exc)
+            attempts = 2 if provider.name in RETRY_ONCE_PROVIDERS else 1
+            for attempt in range(1, attempts + 1):
+                try:
+                    raw = provider.generate_json(system, user, self.timeout)
+                    return LLMResult(provider=provider.name, data=parse_json_response(raw, schema))
+                except LLMProviderError as exc:
+                    # Kullanıcı metni günlüğe yazılmaz; yalnızca hangi servisin neden düştüğü.
+                    if exc.retryable and attempt < attempts:
+                        logger.warning("LLM servisi geçici hata verdi, bir kez daha deneniyor: %s", exc)
+                        continue
+                    logger.warning("LLM servisi başarısız, yedeğe geçiliyor: %s", exc)
+                    break
         raise LLMUnavailableException()
 
 
@@ -91,8 +103,12 @@ class RateLimiter:
 def build_llm_service() -> LLMService:
     return LLMService(
         providers=[
-            GroqProvider(settings.GROQ_API_KEY, settings.GROQ_MODEL),
-            GeminiProvider(settings.GEMINI_API_KEY, settings.GEMINI_MODEL),
+            GroqProvider(
+                settings.GROQ_API_KEY, settings.GROQ_MODEL, max_output_tokens=settings.LLM_MAX_OUTPUT_TOKENS
+            ),
+            GeminiProvider(
+                settings.GEMINI_API_KEY, settings.GEMINI_MODEL, max_output_tokens=settings.LLM_MAX_OUTPUT_TOKENS
+            ),
         ],
         timeout=settings.LLM_TIMEOUT_SECONDS,
     )

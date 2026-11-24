@@ -92,12 +92,14 @@ def test_groq_istegi_dogru_baslik_ve_govde_ile_gider():
         pytest.param(lambda r: groq_ok(payload={"story_points": "çok"}), id="sema-uyumsuz"),
     ],
 )
-def test_groq_basarisiz_olursa_gemini_yedegine_gecilir(groq_handler):
+def test_groq_basarisiz_olursa_gemini_yedegine_gecilir(groq_handler, request):
     service, calls = make_service(groq_handler=groq_handler)
     result = service.complete_json("s", "u", Points)
     assert result.provider == "gemini"
     assert result.data.reason == GOOD["reason"]
-    assert calls["groq"] == 1 and calls["gemini"] == 1
+    # #288: geçici hatada (429, bağlantı kurulamadı) Groq yedeğe geçmeden bir kez daha denenir.
+    groq_attempts = 2 if request.node.callspec.id in {"429", "baglanti-hatasi"} else 1
+    assert calls["groq"] == groq_attempts and calls["gemini"] == 1
 
 
 def test_gemini_istegi_dogru_baslik_ve_govde_ile_gider():

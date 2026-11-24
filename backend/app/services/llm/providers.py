@@ -3,6 +3,10 @@
 Her sağlayıcı tek bir iş yapar: sistem ve kullanıcı metnini alıp JSON metni döndürür.
 Zaman aşımı, ağ hatası, 4xx/5xx ve bozuk yanıt gibi tüm hatalar LLMProviderError olarak
 yükseltilir; hangi servise geçileceğine servis katmanı karar verir.
+
+Geçici hatalar (429 ve bağlantı kurulamaması) `retryable=True` ile işaretlenir; servis katmanı
+Groq'u bunlarda bir kez daha dener (#288). Zaman aşımı geçici sayılmaz: sözleşme 13.1 ve
+FR-083 gereği 10 saniyede yanıt yoksa doğrudan yedek servise geçilir.
 """
 
 from abc import ABC, abstractmethod
@@ -14,13 +18,31 @@ import httpx
 class LLMProviderError(Exception):
     """Sağlayıcıdan kullanılabilir bir yanıt alınamadı."""
 
+    def __init__(self, message: str, retryable: bool = False):
+        super().__init__(message)
+        # True: aynı servisi hemen bir kez daha denemek anlamlı (429, bağlantı kurulamadı).
+        self.retryable = retryable
+
+
+# Modelin üretebileceği en fazla çıktı (token). Yanıtlarımız kısa JSON'dur; sınır, maliyeti ve
+# beklenmedik uzun çıktıları önler (#288). Groq'taki gpt-oss modeli "düşünme" token'larını da
+# bu sınırdan saydığı için çok düşük tutulmaz.
+DEFAULT_MAX_OUTPUT_TOKENS = 2048
+
 
 class LLMProvider(ABC):
     name: str
 
-    def __init__(self, api_key: str, model: str, client: Optional[httpx.Client] = None):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        client: Optional[httpx.Client] = None,
+        max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
+    ):
         self.api_key = api_key
         self.model = model
+        self.max_output_tokens = max_output_tokens
         # Testlerde httpx.MockTransport'lu bir istemci verilir; canlıda her çağrıda yenisi açılır.
         self._client = client
 
@@ -35,6 +57,8 @@ class LLMProvider(ABC):
             raise
         except httpx.TimeoutException as exc:
             raise LLMProviderError(f"{self.name}: zaman aşımı") from exc
+        except httpx.ConnectError as exc:
+            raise LLMProviderError(f"{self.name}: bağlantı kurulamadı", retryable=True) from exc
         except httpx.HTTPError as exc:
             raise LLMProviderError(f"{self.name}: bağlantı hatası ({type(exc).__name__})") from exc
         except (KeyError, IndexError, TypeError, ValueError) as exc:
@@ -48,7 +72,10 @@ class LLMProvider(ABC):
                 response = client.post(url, timeout=timeout, **kwargs)
         if response.status_code != 200:
             # Yanıt gövdesi (kullanıcı verisi içerebilir) hataya eklenmez, yalnızca durum kodu.
-            raise LLMProviderError(f"{self.name}: HTTP {response.status_code}")
+            raise LLMProviderError(
+                f"{self.name}: HTTP {response.status_code}",
+                retryable=response.status_code == 429,
+            )
         return response.json()
 
     @abstractmethod
@@ -72,6 +99,7 @@ class GroqProvider(LLMProvider):
                 ],
                 "response_format": {"type": "json_object"},
                 "temperature": 0.2,
+                "max_completion_tokens": self.max_output_tokens,
             },
         )
         content = data["choices"][0]["message"]["content"]
@@ -95,6 +123,7 @@ class GeminiProvider(LLMProvider):
                 "generationConfig": {
                     "responseMimeType": "application/json",
                     "temperature": 0.2,
+                    "maxOutputTokens": self.max_output_tokens,
                 },
             },
         )
