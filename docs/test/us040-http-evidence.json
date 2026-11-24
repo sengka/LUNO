@@ -1,0 +1,127 @@
+{
+  "date": "2026-11-23",
+  "environment": "isolated SQLite + real uvicorn HTTP on 127.0.0.1:8011",
+  "login_count": 2,
+  "checks": [
+    {
+      "method": "POST",
+      "path": "/projects/1/sprints",
+      "actor": "admin",
+      "status": 201,
+      "error_code": null
+    },
+    {
+      "method": "GET",
+      "path": "/sprints/1",
+      "actor": "member",
+      "status": 200,
+      "error_code": null
+    },
+    {
+      "method": "POST",
+      "path": "/projects/1/sprints",
+      "actor": "admin",
+      "status": 400,
+      "error_code": "SPRINT_OVERLAP"
+    },
+    {
+      "method": "PATCH",
+      "path": "/sprints/1",
+      "actor": "admin",
+      "status": 400,
+      "error_code": "INVALID_DATE_RANGE"
+    },
+    {
+      "method": "PATCH",
+      "path": "/sprints/1",
+      "actor": "admin",
+      "status": 422,
+      "error_code": "VALIDATION_ERROR"
+    },
+    {
+      "method": "PATCH",
+      "path": "/sprints/1",
+      "actor": "admin",
+      "status": 422,
+      "error_code": "VALIDATION_ERROR"
+    },
+    {
+      "method": "PATCH",
+      "path": "/sprints/1",
+      "actor": "admin",
+      "status": 422,
+      "error_code": "VALIDATION_ERROR"
+    },
+    {
+      "method": "POST",
+      "path": "/sprints/1/tasks",
+      "actor": "admin",
+      "status": 200,
+      "error_code": null
+    },
+    {
+      "method": "POST",
+      "path": "/sprints/1/tasks",
+      "actor": "member",
+      "status": 403,
+      "error_code": "FORBIDDEN"
+    },
+    {
+      "method": "DELETE",
+      "path": "/sprints/1/tasks/1",
+      "actor": "admin",
+      "status": 204,
+      "error_code": null
+    },
+    {
+      "method": "GET",
+      "path": "/sprints/1",
+      "actor": "admin",
+      "status": 200,
+      "error_code": null
+    },
+    {
+      "method": "POST",
+      "path": "/sprints/1/tasks",
+      "actor": "admin",
+      "status": 200,
+      "error_code": null
+    },
+    {
+      "method": "DELETE",
+      "path": "/sprints/1",
+      "actor": "admin",
+      "status": 204,
+      "error_code": null
+    },
+    {
+      "method": "GET",
+      "path": "/tasks/1",
+      "actor": "admin",
+      "status": 200,
+      "error_code": null
+    },
+    {
+      "method": "GET",
+      "path": "/sprints/1",
+      "actor": "admin",
+      "status": 404,
+      "error_code": "SPRINT_NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/sprints",
+      "actor": "anonymous",
+      "status": 401,
+      "error_code": "UNAUTHORIZED"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/1/sprints",
+      "actor": "member",
+      "status": 200,
+      "error_code": null
+    }
+  ],
+  "all_passed": true
+}
