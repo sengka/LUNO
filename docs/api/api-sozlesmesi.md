@@ -1,7 +1,7 @@
 # LUNO · API Sözleşmesi
 
 > Bu doküman backend ile frontend arasındaki anlaşmadır: hangi adrese ne gönderileceğini ve ne döneceğini tanımlar. Backend bu sözleşmeye göre uç noktaları yazar, frontend aynı anda bu sözleşmedeki örnek yanıtlarla (mock) ekranları geliştirir.
-> **Sürüm:** v1.1 · **Kapsam:** Gereksinim dokümanı v4'teki 86 fonksiyonel gereksinim (FR-001 – FR-086) ve 54 user story (US-001 – US-054)
+> **Sürüm:** v1.2 · **Kapsam:** Gereksinim dokümanı v4'teki 86 fonksiyonel gereksinim (FR-001 – FR-086) ve 54 user story (US-001 – US-054)
 > **Değişiklik kuralı:** Sözleşmede değişiklik gerekirse önce ilgili frontend geliştiricisine haber verilir ve bu doküman PR ile güncellenir.
 
 ## Sürüm geçmişi
@@ -10,6 +10,7 @@
 |---|---|---|
 | v1.0 | 5 Ekim 2026 | İlk sürüm |
 | v1.1 | 9 Ekim 2026 | Liste uç noktalarında arama parametresi `q` → `search`, sayfa boyutu `size` → `limit` (varsayılan 10). PR #88 ile uyum için |
+| v1.2 | 24 Kasım 2026 | Bölüm 13 (LLM) sprint etiketleri yeni plana göre güncellendi: 13.2, 13.3, 13.5, 13.6 → Sprint 7; 13.4 basit hali Sprint 6, tam hali Sprint 8; 13.7 → Sprint 8–9. Uç nokta, alan veya hata kodu değişmedi (#304) |
 
 ## İçindekiler
 
@@ -1072,7 +1073,7 @@ Kullanıcıya atanmış, `DONE` olmayan ve teslim tarihine 3 gün veya daha az k
 - Yanıtlarda kullanılan servis `"provider": "groq"` veya `"gemini"` olarak döner.
 
 ### 13.2 Toplantı notundan görev çıkar
-`POST /ai/projects/{project_id}/extract-tasks` · Yönetici · US-051 · FR-077 · Sprint 9
+`POST /ai/projects/{project_id}/extract-tasks` · Yönetici · US-051 · FR-077 · Sprint 7
 
 **İstek:** `{ "text": "Can API'yi cumaya kadar yapacak. Ayşe giriş ekranını tasarlayacak..." }` (en fazla 5000 karakter)
 
@@ -1090,24 +1091,24 @@ Kullanıcıya atanmış, `DONE` olmayan ve teslim tarihine 3 gün veya daha az k
 Kişi adı projede bulunamazsa veya birden fazla eşleşme varsa `assignee_id` `null` döner; frontend kullanıcıdan kişiyi seçmesini ister.
 
 ### 13.3 Alt görev önerisi
-`POST /ai/tasks/{task_id}/suggest-subtasks` · Yönetici · US-052 · FR-079 · Sprint 9
+`POST /ai/tasks/{task_id}/suggest-subtasks` · Yönetici · US-052 · FR-079 · Sprint 7
 
 **Yanıt · 200:** `{ "provider": "groq", "suggestions": [ { "title": "Form tasarımı" }, { "title": "JWT entegrasyonu" } ] }`
 
 ### 13.4 Efor puanı önerisi
-`POST /ai/tasks/{task_id}/suggest-points` · Yönetici · US-052 · FR-080 · Sprint 7 (basit hali) / Sprint 9
+`POST /ai/tasks/{task_id}/suggest-points` · Yönetici · US-052 · FR-080 · Sprint 6 (basit hali) / Sprint 8
 
 **Yanıt · 200:** `{ "provider": "groq", "story_points": 5, "reason": "Birden fazla ekran ve API bağlantısı içeriyor." }`
 
 `story_points` her zaman 1, 2, 3, 5, 8 veya 13'ten biridir.
 
 ### 13.5 Haftalık proje özeti
-`POST /ai/projects/{project_id}/weekly-summary` · Yönetici · US-053 · FR-081 · Sprint 9
+`POST /ai/projects/{project_id}/weekly-summary` · Yönetici · US-053 · FR-081 · Sprint 7
 
 **Yanıt · 200:** `{ "provider": "groq", "from": "2026-10-01", "to": "2026-10-07", "summary": "Bu hafta 7 görev tamamlandı..." }`
 
 ### 13.6 Yorum zinciri özeti
-`POST /ai/tasks/{task_id}/summarize-comments` · Proje üyesi · US-053 · FR-082 · Sprint 9
+`POST /ai/tasks/{task_id}/summarize-comments` · Proje üyesi · US-053 · FR-082 · Sprint 7
 
 **Yanıt · 200:** `{ "provider": "groq", "decisions": ["..."], "open_questions": ["..."], "summary": "..." }`
 
@@ -1116,7 +1117,7 @@ Kişi adı projede bulunamazsa veya birden fazla eşleşme varsa `assignee_id` `
 | 400 | `NOT_ENOUGH_COMMENTS` | Özet için görevde en az 5 yorum olmalıdır. |
 
 ### 13.7 Proje chatbotu
-`POST /ai/projects/{project_id}/chat` · Proje üyesi · US-054 · FR-085, FR-086 · Sprint 10 (zaman kalırsa)
+`POST /ai/projects/{project_id}/chat` · Proje üyesi · US-054 · FR-085, FR-086 · Sprint 8–9
 
 **İstek**
 ```json
