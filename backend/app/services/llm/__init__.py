@@ -4,6 +4,7 @@ from app.services.llm.providers import (
     LLMProvider,
     LLMProviderError,
 )
+from app.services.llm.prompts import system_prompt, user_data
 from app.services.llm.service import (
     LLMResult,
     LLMService,
@@ -26,4 +27,6 @@ __all__ = [
     "get_llm_rate_limiter",
     "get_llm_service",
     "parse_json_response",
+    "system_prompt",
+    "user_data",
 ]

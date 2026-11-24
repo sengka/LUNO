@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-3.5-flash-lite"  # #257 denemesi; 3.5-flash 10 sn sınırına sığmadı
     LLM_TIMEOUT_SECONDS: float = 10.0  # FR-083: 10 saniyede yanıt gelmezse yedek servise geçilir
     LLM_RATE_LIMIT_PER_MINUTE: int = 10
+    LLM_MAX_INPUT_CHARS: int = 12000  # #288: modele giden kullanıcı verisinin en fazla uzunluğu (karakter)
+    LLM_MAX_OUTPUT_TOKENS: int = 2048  # #288: modelin üretebileceği en fazla token
 
     @model_validator(mode="after")
     def validate_storage_settings(self):
