@@ -12,6 +12,7 @@ import { taskKeys, tasksApi } from './api'
 import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskEditForm } from './TaskEditForm'
 import { TaskLabels } from './TaskLabels'
+import { TaskPointsSuggestion } from '@/features/ai/TaskPointsSuggestion'
 import { TaskSubtasks } from './TaskSubtasks'
 import { TaskComments } from '@/features/comments/TaskComments'
 import { TaskFiles } from '@/features/files/TaskFiles'
@@ -107,6 +108,7 @@ function TaskDetailContent() {
                   </div>
                 </dl>
                 <TaskLabels key={task.id} task={task} />
+                <TaskPointsSuggestion key={`ai-points-${task.id}`} task={task} />
               </aside>
             </div>}
           </div>
