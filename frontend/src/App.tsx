@@ -13,6 +13,7 @@ import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { InviteAcceptPage } from '@/features/projects/InviteAcceptPage'
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage'
+import { NotificationsPage } from '@/features/notifications/NotificationsPage'
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/projeler/:projectId/:view" element={<ProjectDetailPage />} />
           <Route path="/davet/:token" element={<InviteAcceptPage />} />
           <Route path="/gorevler/:taskId" element={<TaskDetailPage />} />
+          <Route path="/bildirimler" element={<NotificationsPage />} />
 
           <Route element={<AdminRoute />}>
             <Route path="/projeler/:projectId/raporlar" element={<ReportsPage />} />
