@@ -16,6 +16,7 @@ import { ProjectEditForm } from './ProjectEditForm'
 import { ProjectDeleteButton } from './ProjectDeleteButton'
 import { ProjectMembers } from './ProjectMembers'
 import { ProjectInvitePanel } from './ProjectInvitePanel'
+import { ProjectWeeklySummary } from '@/features/ai/ProjectWeeklySummary'
 
 const ProjectCalendar = lazy(() => import('./ProjectCalendar'))
 const ProjectGantt = lazy(() => import('./ProjectGantt'))
@@ -260,6 +261,7 @@ function ProjectDetailContent() {
       </section>
 
       <ActiveSprintProgress projectId={project.id} />
+      <ProjectWeeklySummary projectId={project.id} />
       {isAdmin && <Link to={`/projeler/${project.id}/raporlar`} className="text-brand underline">Proje raporları</Link>}
       <ProjectMembers projectId={project.id} />
             {isAdmin && <ProjectInvitePanel projectId={project.id} />}

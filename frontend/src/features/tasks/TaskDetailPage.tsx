@@ -13,6 +13,7 @@ import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskEditForm } from './TaskEditForm'
 import { TaskLabels } from './TaskLabels'
 import { TaskPointsSuggestion } from '@/features/ai/TaskPointsSuggestion'
+import { TaskCommentSummary } from '@/features/ai/TaskCommentSummary'
 import { TaskSubtasks } from './TaskSubtasks'
 import { TaskComments } from '@/features/comments/TaskComments'
 import { TaskFiles } from '@/features/files/TaskFiles'
@@ -84,6 +85,7 @@ function TaskDetailContent() {
                 </div>
                 <TaskSubtasks key={task.id} task={task} />
                 <TaskFiles key={`files-${task.id}`} task={task} />
+                <TaskCommentSummary key={`ai-comments-${task.id}`} taskId={task.id} />
                 <TaskComments key={`comments-${task.id}`} task={task} />
               </section>
               <aside className="border-t pt-6 md:border-t-0 md:border-l md:pt-0 md:pl-6" aria-label="Görev bilgileri">

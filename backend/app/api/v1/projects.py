@@ -17,6 +17,7 @@ from app.schemas.project import (
     ProjectResponse,
     ProjectListResponse,
     ProjectMemberAddRequest,
+    ProjectMemberUpdateRequest,
     ProjectMemberResponse,
     UserSummary
 )
@@ -364,6 +365,44 @@ def remove_project_member(
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.patch(
+    "/{project_id}/members/{user_id}",
+    response_model=ProjectMemberResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Üyenin Teknik Rolünü ve Kapasitesini Güncelle (US-025 / US-029 / 5.11)"
+)
+def update_project_member(
+    project_id: int,
+    user_id: int,
+    member_in: ProjectMemberUpdateRequest,
+    current_user: User = Depends(require_admin),
+    _membership: ProjectMember = Depends(get_project_member),
+    db: Session = Depends(get_db)
+):
+    """
+    Proje üyesinin teknik rolünü ve/veya kapasite puanını günceller (FR-023, FR-075).
+    Yalnızca YONETICI rolüne sahip ve projenin üyesi olan kullanıcılar güncelleyebilir.
+    capacity_points: null gönderilirse kapasite sınırı kaldırılır (US-044).
+    """
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id)
+        .first()
+    )
+    if not member:
+        raise MemberNotFoundException("Bu kullanıcı projenin üyesi değil.")
+
+    if "technical_role" in member_in.model_fields_set:
+        member.technical_role = member_in.technical_role
+    if "capacity_points" in member_in.model_fields_set:
+        member.capacity_points = member_in.capacity_points
+
+    db.commit()
+    db.refresh(member)
+
+    return build_member_response(member)
 
 
 

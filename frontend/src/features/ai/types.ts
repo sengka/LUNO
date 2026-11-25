@@ -14,3 +14,19 @@ export interface PointsSuggestion {
   story_points: StoryPoints
   reason: string
 }
+
+// Sözleşme 13.5
+export interface WeeklySummary {
+  provider: LLMProvider
+  from: string
+  to: string
+  summary: string
+}
+
+// Sözleşme 13.6
+export interface CommentSummary {
+  provider: LLMProvider
+  decisions: string[]
+  open_questions: string[]
+  summary: string
+}

@@ -53,6 +53,10 @@ class ProjectMemberAddRequest(BaseModel):
     email: EmailStr = Field(..., description="Kullanıcı e-posta adresi")
     technical_role: Optional[str] = Field(None, max_length=100, description="Teknik rol (ör. Backend Geliştirici)")
 
+class ProjectMemberUpdateRequest(BaseModel):
+    technical_role: Optional[str] = Field(None, max_length=100, description="Teknik rol (ör. Frontend Geliştirici)")
+    capacity_points: Optional[int] = Field(None, gt=0, description="Kapasite puanı (pozitif tam sayı veya null)")
+
 class ProjectMemberResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
