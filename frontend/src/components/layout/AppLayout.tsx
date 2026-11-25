@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from 
 import { Logo } from '@/components/Logo'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useAuth } from '@/features/auth/auth-context'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { cn } from '@/lib/utils'
 import { ROLE_LABELS, type User } from '@/types/api'
 
@@ -117,6 +118,9 @@ export function AppLayout() {
         <Logo className="lg:hidden" />
 
         <div className="ml-auto flex items-center gap-2">
+          {/* US-021: okunmamış bildirim sayısı ve son bildirimler */}
+          <NotificationBell />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto gap-2 px-2 py-1.5">
