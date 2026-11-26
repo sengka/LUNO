@@ -28,6 +28,7 @@ from app.schemas.task import (
     GanttItem,
     GanttResponse,
 )
+from app.services.capacity import ensure_assignment_capacity
 from app.services.tasks import create_task
 from app.services.sprints import validate_sprint_for_project
 from app.services.risk import (
@@ -709,7 +710,9 @@ def update_task_assignee(
     - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
     - Yönetici değilse 403 FORBIDDEN
     - Atanan kişi projenin üyesi değilse 400 ASSIGNEE_NOT_MEMBER
-    - Kapasite kontrolü Sprint 7'de eklenecektir; confirm_over_capacity kabul edilip yok sayılır.
+    - Üyenin kapasitesi tanımsızsa kapasite kontrolü yapılmaz, uyarı verilmez (US-044, FR-074).
+    - Kapasitesi tanımlı üyede aşım kontrolü ve 409 CAPACITY_EXCEEDED US-025 (#283) ile gelecek;
+      `confirm_over_capacity` şimdilik kabul edilip yok sayılır.
     """
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
@@ -734,6 +737,12 @@ def update_task_assignee(
         )
         if not target_member:
             raise AssigneeNotMemberException()
+
+    # Kapasite kuralları tek yerde (sözleşme 6.6): kapasitesi tanımsız üyede kontrol
+    # yapılmaz, atama engellenmez ve uyarı verilmez (US-044, FR-074).
+    ensure_assignment_capacity(
+        db, task.project_id, assignee_in.assignee_id, assignee_in.confirm_over_capacity
+    )
 
     _preserve_legacy_completion_time(task)
     previous_assignee_id = task.assignee_id
