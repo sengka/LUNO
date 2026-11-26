@@ -90,8 +90,13 @@ def ai_task_access(admin_only: bool, precheck: Optional[TaskPrecheck] = None) ->
     return dependency
 
 
-def ai_project_access(admin_only: bool) -> Callable[..., AIProjectContext]:
-    """Adreste {project_id} olan AI uç noktaları için koruma üretir."""
+def ai_project_access(admin_only: bool, check_rate_limit: bool = True) -> Callable[..., AIProjectContext]:
+    """Adreste {project_id} olan AI uç noktaları için koruma üretir.
+
+    check_rate_limit=False: İstek gövdesi olan uç noktalar içindir. FastAPI bu bağımlılığı gövdeyi
+    doğrulamadan önce çalıştırır; sınır burada sayılırsa 422 alan istekler de hak yer. Bu uç noktalar
+    sınırı, gövdeyi de alan kendi bağımlılıklarında count_ai_request ile sayar (ör. 13.2).
+    """
     role_check = require_admin if admin_only else get_current_user
 
     def dependency(
@@ -104,10 +109,16 @@ def ai_project_access(admin_only: bool) -> Callable[..., AIProjectContext]:
         if not project:
             raise ProjectNotFoundException()
         _ensure_member(db, project.id, current_user.id)
-        limiter.check(current_user.id)
+        if check_rate_limit:
+            limiter.check(current_user.id)
         return AIProjectContext(user=current_user, project=project)
 
     return dependency
+
+
+def count_ai_request(user: User, limiter: RateLimiter) -> None:
+    """Dakikada 10 istek sınırını sayar (429 RATE_LIMITED). Gövdeli uç noktalarda gövde doğrulandıktan sonra çağrılır."""
+    limiter.check(user.id)
 
 
 # Uç noktaların kullandığı hazır korumalar.

@@ -18,20 +18,33 @@ from app.api.ai_deps import (
     AITaskContext,
     admin_project_access,
     admin_task_access,
+    ai_project_access,
     ai_task_access,
+    count_ai_request,
 )
 from app.database import get_db
 from app.models.task import Task
 from app.schemas.ai import (
     CommentSummaryLLMOutput,
     CommentSummaryResponse,
+    ExtractTasksLLMOutput,
+    ExtractTasksRequest,
+    ExtractTasksResponse,
     StoryPointsSuggestion,
     SuggestPointsResponse,
     WeeklySummaryLLMOutput,
     WeeklySummaryResponse,
 )
+from app.services.ai_extract import build_suggestions, project_members
 from app.services.ai_summaries import comment_thread_text, require_enough_comments, weekly_summary_data
-from app.services.llm import LLMService, get_llm_service, system_prompt, user_data
+from app.services.llm import (
+    LLMService,
+    RateLimiter,
+    get_llm_rate_limiter,
+    get_llm_service,
+    system_prompt,
+    user_data,
+)
 from app.services.sprints import today_utc
 
 router = APIRouter(prefix="/ai", tags=["Yapay Zekâ"])
@@ -168,3 +181,64 @@ def summarize_task_comments(
         open_questions=result.data.open_questions,
         summary=result.data.summary,
     )
+
+
+# --- 13.2 Toplantı notundan görev çıkarma (US-051, FR-077) --------------------------------------
+
+EXTRACT_TASKS_INSTRUCTIONS = (
+    "Sen bir proje yönetimi asistanısın. Sana Türkçe bir toplantı notu verilecek. Nottaki yapılacak "
+    "işleri görev olarak çıkar. Her görev için: kısa bir Türkçe başlık (title), işi yapacak kişinin "
+    "notta yazdığı haliyle adı (assignee_name) ve teslim zamanını belirten ifadenin notta yazdığı hali "
+    '(due_expression; ör. "cumaya kadar", "haftaya salı", "20 Kasım"). Tarihi hesaplama ve '
+    "biçimini değiştirme; ifadeyi olduğu gibi yaz. Kişi veya teslim zamanı belirtilmemişse null yaz. "
+    "Yapılacak iş yoksa boş liste döndür. "
+    'Yalnızca şu biçimde JSON döndür: {"suggestions": [{"title": "...", "assignee_name": "...", "due_expression": "..."}]}'
+)
+
+
+_extract_tasks_access = ai_project_access(admin_only=True, check_rate_limit=False)
+
+
+def extract_tasks_guard(
+    payload: ExtractTasksRequest,
+    ctx: AIProjectContext = Depends(_extract_tasks_access),
+    limiter: RateLimiter = Depends(get_llm_rate_limiter),
+) -> AIProjectContext:
+    """Ortak koruma + gövde. Gövde geçersizse FastAPI bu fonksiyonu hiç çağırmaz (422);
+    böylece hatalı istek dakikalık haktan düşmez."""
+    count_ai_request(ctx.user, limiter)
+    return ctx
+
+
+@router.post(
+    "/projects/{project_id}/extract-tasks",
+    response_model=ExtractTasksResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Toplantı notundan görev çıkarma (US-051 / 13.2)",
+)
+def extract_tasks_from_note(
+    payload: ExtractTasksRequest,
+    ctx: AIProjectContext = Depends(extract_tasks_guard),
+    db: Session = Depends(get_db),
+    llm: LLMService = Depends(get_llm_service),
+):
+    """
+    Toplantı notundaki işleri görev önerisine çevirir (FR-077, sözleşme 13.2).
+    - Tarih ifadesini model değil backend çözer (dateparser + Türkçe kurallar); çözülemezse due_date null.
+    - Kişi adı projede tek bir üyeyle eşleşmezse (hiç ya da birden fazla) assignee_id null.
+    - Görev yoksa boş liste. Öneriler kaydedilmez; kullanıcı onaylarsa frontend 6.2'yi çağırır.
+    Erişim: Yönetici ve proje üyesi (1.2). Metin 1–5000 karakter, aksi halde 422 VALIDATION_ERROR.
+    Hatalar: 403 FORBIDDEN, 404 PROJECT_NOT_FOUND, 403 PROJECT_ACCESS_DENIED, 429 RATE_LIMITED,
+    503 LLM_UNAVAILABLE.
+    """
+    result = llm.complete_json(
+        system_prompt(EXTRACT_TASKS_INSTRUCTIONS),
+        user_data(payload.text),
+        ExtractTasksLLMOutput,
+    )
+    suggestions = build_suggestions(
+        result.data.suggestions,
+        project_members(db, ctx.project.id),
+        today_utc(),
+    )
+    return ExtractTasksResponse(provider=result.provider, suggestions=suggestions)
