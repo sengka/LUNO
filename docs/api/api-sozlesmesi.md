@@ -1,7 +1,7 @@
 # LUNO · API Sözleşmesi
 
 > Bu doküman backend ile frontend arasındaki anlaşmadır: hangi adrese ne gönderileceğini ve ne döneceğini tanımlar. Backend bu sözleşmeye göre uç noktaları yazar, frontend aynı anda bu sözleşmedeki örnek yanıtlarla (mock) ekranları geliştirir.
-> **Sürüm:** v1.2 · **Kapsam:** Gereksinim dokümanı v4'teki 86 fonksiyonel gereksinim (FR-001 – FR-086) ve 54 user story (US-001 – US-054)
+> **Sürüm:** v1.3 · **Kapsam:** Gereksinim dokümanı v4'teki 86 fonksiyonel gereksinim (FR-001 – FR-086) ve 54 user story (US-001 – US-054)
 > **Değişiklik kuralı:** Sözleşmede değişiklik gerekirse önce ilgili frontend geliştiricisine haber verilir ve bu doküman PR ile güncellenir.
 
 ## Sürüm geçmişi
@@ -11,6 +11,7 @@
 | v1.0 | 5 Ekim 2026 | İlk sürüm |
 | v1.1 | 9 Ekim 2026 | Liste uç noktalarında arama parametresi `q` → `search`, sayfa boyutu `size` → `limit` (varsayılan 10). PR #88 ile uyum için |
 | v1.2 | 24 Kasım 2026 | Bölüm 13 (LLM) sprint etiketleri yeni plana göre güncellendi: 13.2, 13.3, 13.5, 13.6 → Sprint 7; 13.4 basit hali Sprint 6, tam hali Sprint 8; 13.7 → Sprint 8–9. Uç nokta, alan veya hata kodu değişmedi (#304) |
+| v1.3 | 26 Kasım 2026 | 13.3 Alt görev önerisi: görev zaten bir alt görevse 400 `NESTED_SUBTASK_NOT_ALLOWED` (6.10'daki kural); mevcut alt görevler tekrar önerilmez (#303) |
 
 ## İçindekiler
 
@@ -1094,6 +1095,12 @@ Kişi adı projede bulunamazsa veya birden fazla eşleşme varsa `assignee_id` `
 `POST /ai/tasks/{task_id}/suggest-subtasks` · Yönetici · US-052 · FR-079 · Sprint 7
 
 **Yanıt · 200:** `{ "provider": "groq", "suggestions": [ { "title": "Form tasarımı" }, { "title": "JWT entegrasyonu" } ] }`
+
+Görevin mevcut alt görevleri modele verilir; aynı başlık tekrar önerilmez.
+
+| Kod | `error.code` | Mesaj |
+|---|---|---|
+| 400 | `NESTED_SUBTASK_NOT_ALLOWED` | Alt görevlere alt görev eklenemez. (Görev zaten bir alt görevse; 6.10 ile aynı kural, modele istek gitmez.) |
 
 ### 13.4 Efor puanı önerisi
 `POST /ai/tasks/{task_id}/suggest-points` · Yönetici · US-052 · FR-080 · Sprint 6 (basit hali) / Sprint 8
