@@ -12,7 +12,9 @@ from app.core.exceptions import (
 )
 from app.database import get_db
 from app.models.comment import Comment
+from app.models.enums import NotificationType
 from app.models.file import ProjectFile
+from app.models.notification import Notification
 from app.models.project_member import ProjectMember
 from app.models.task import Task
 from app.models.user import User
@@ -118,14 +120,45 @@ def create_task_comment(
     """
     task = _verify_task_access(db, task_id, current_user.id)
 
+    now = datetime.now(timezone.utc)
     comment = Comment(
         body=comment_in.body,
         author_id=current_user.id,
         task_id=task.id,
         file_id=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=now,
     )
     db.add(comment)
+
+    # US-037 / FR-054: Görevin atandığı kişiye ve önceki yorumculara (yazan hariç) COMMENT_ADDED bildirimi
+    recipient_ids: set[int] = set()
+    if task.assignee_id is not None and task.assignee_id != current_user.id:
+        recipient_ids.add(task.assignee_id)
+
+    previous_commenters = (
+        db.query(Comment.author_id)
+        .filter(Comment.task_id == task.id, Comment.author_id != current_user.id)
+        .distinct()
+        .all()
+    )
+    for (author_id,) in previous_commenters:
+        recipient_ids.add(author_id)
+
+    if recipient_ids:
+        message = f"{current_user.full_name}, '{task.title}' görevine yorum yazdı."
+        for recipient_id in recipient_ids:
+            db.add(
+                Notification(
+                    user_id=recipient_id,
+                    type=NotificationType.COMMENT_ADDED,
+                    message=message,
+                    project_id=task.project_id,
+                    task_id=task.id,
+                    is_read=False,
+                    created_at=now,
+                )
+            )
+
     db.commit()
     db.refresh(comment)
 
