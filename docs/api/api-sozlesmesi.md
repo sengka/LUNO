@@ -1,7 +1,7 @@
 # LUNO · API Sözleşmesi
 
 > Bu doküman backend ile frontend arasındaki anlaşmadır: hangi adrese ne gönderileceğini ve ne döneceğini tanımlar. Backend bu sözleşmeye göre uç noktaları yazar, frontend aynı anda bu sözleşmedeki örnek yanıtlarla (mock) ekranları geliştirir.
-> **Sürüm:** v1.3 · **Kapsam:** Gereksinim dokümanı v4'teki 86 fonksiyonel gereksinim (FR-001 – FR-086) ve 54 user story (US-001 – US-054)
+> **Sürüm:** v1.4 · **Kapsam:** Gereksinim dokümanı v4'teki 86 fonksiyonel gereksinim (FR-001 – FR-086) ve 54 user story (US-001 – US-054)
 > **Değişiklik kuralı:** Sözleşmede değişiklik gerekirse önce ilgili frontend geliştiricisine haber verilir ve bu doküman PR ile güncellenir.
 
 ## Sürüm geçmişi
@@ -12,6 +12,7 @@
 | v1.1 | 9 Ekim 2026 | Liste uç noktalarında arama parametresi `q` → `search`, sayfa boyutu `size` → `limit` (varsayılan 10). PR #88 ile uyum için |
 | v1.2 | 24 Kasım 2026 | Bölüm 13 (LLM) sprint etiketleri yeni plana göre güncellendi: 13.2, 13.3, 13.5, 13.6 → Sprint 7; 13.4 basit hali Sprint 6, tam hali Sprint 8; 13.7 → Sprint 8–9. Uç nokta, alan veya hata kodu değişmedi (#304) |
 | v1.3 | 26 Kasım 2026 | 13.3 Alt görev önerisi: görev zaten bir alt görevse 400 `NESTED_SUBTASK_NOT_ALLOWED` (6.10'daki kural); mevcut alt görevler tekrar önerilmez (#303) |
+| v1.4 | 27 Kasım 2026 | 12.1 Gecikme risk seviyesi kuralı ve eşikleri yazıldı (kalan gün/durum tablosu, yükseltme etkenleri, risk olmayan durumlar); 12.2 `level` varsayılanı `DUSUK`, sıralama ve hata kodları netleşti; 6.6'da kapasite tanımsız durumu açıklandı (#277, #280, #286) |
 
 ## İçindekiler
 
@@ -650,7 +651,7 @@ Frontend 403 aldığında kartı Kanban'da eski sütununa geri döndürür.
 **Kapasite kontrolü (FR-073, FR-074):**
 1. Kişinin `DONE` olmayan görevlerinin toplam `story_points`'i ile bu görevin puanının toplamı kişinin `capacity_points`'ini aşıyorsa ve `confirm_over_capacity` `false` ise atama **yapılmaz**, 409 döner.
 2. Frontend uyarıyı gösterir. Yönetici "Yine de ata" derse aynı istek `confirm_over_capacity: true` ile tekrar gönderilir.
-3. Kişinin kapasitesi tanımlı değilse (`null`) kontrol yapılmaz, uyarı verilmez.
+3. Kişinin kapasitesi tanımlı değilse (`null`) kontrol yapılmaz, uyarı verilmez; atama normal şekilde yapılır (US-044, FR-074). Yanıt yalnızca **Task** nesnesidir, ek bir uyarı alanı taşımaz.
 
 **Yanıt · 200:** **Task**. Atanan kişiye `TASK_ASSIGNED` bildirimi, e-posta tercihi açıksa e-posta gönderilir.
 
@@ -1012,17 +1013,46 @@ Sprint kapasitesi tanımlıysa ve görevlerle `total_points` kapasiteyi aşacaks
 ### 12.1 Gecikme risk seviyesi
 US-024, US-043 · FR-070 – FR-072 · Sprint 7
 
-Risk seviyesi her **Task** nesnesinde `risk_level` alanında döner; ayrı bir istek gerekmez.
+Risk seviyesi her **Task** nesnesinde `risk_level` alanında döner; ayrı bir istek gerekmez. Değer her istekte hesaplanır, veritabanında tutulmaz. Seviyeler: `DUSUK`, `ORTA`, `YUKSEK` (bölüm 1.3).
 
-1. Görev `DONE` ise `risk_level` = `null` (FR-072).
-2. Teslim tarihi geçmiş ve görev `DONE` değilse `risk_level` = `YUKSEK` (FR-071).
-3. Teslim tarihi yoksa `null`.
-4. Diğer durumlarda seviye; teslim tarihine kalan süre, durum, alt görev tamamlanma oranı, efor puanı ve atanan kişinin aktif görev yükü kullanılarak hesaplanır (FR-070). Eşikler ve formül Sprint 7'de belirlenip bu bölüme eklenecektir.
+**Risk yok (`null`) olan durumlar**
+
+1. Görev `DONE` ise (FR-072, US-043).
+2. Teslim tarihi (`due_date`) yoksa.
+3. Görev aktif değilse (`ONAY_BEKLIYOR`, `REDDEDILDI`); bu görevler Kanban, takvim, Gantt ve raporlarda da gösterilmez (bölüm 1.3).
+
+**Seviye hesabı**
+
+4. Teslim tarihi geçmişse `YUKSEK` (FR-071). Teslim günü bugün olan görev gecikmiş sayılmaz.
+5. Diğer görevlerde teslim tarihine kalan güne ve duruma göre taban seviye:
+
+| Kalan gün | `TODO` | `IN_PROGRESS` | `REVIEW_TESTING` |
+|---|---|---|---|
+| 0 – 2 gün | `YUKSEK` | `ORTA` | `DUSUK` |
+| 3 – 7 gün | `ORTA` | `DUSUK` | risk yok |
+| 7 günden fazla | risk yok | risk yok | risk yok |
+
+6. Aşağıdaki üç etkenden **en az ikisi** varsa taban seviye bir basamak yükselir (`DUSUK` → `ORTA` → `YUKSEK`; en fazla `YUKSEK`):
+   - Efor puanı `8` veya `13`.
+   - Aktif alt görevlerin yarısından azı `DONE` (alt görevi olmayan görevde bu etken sayılmaz; onay bekleyen ve reddedilen alt görevler `subtask_count` ile aynı şekilde hesaba katılmaz).
+   - Atanan kişinin aynı projedeki açık (`DONE` olmayan aktif) görev sayısı 5'ten fazla; alt görevler ve görevin kendisi de sayılır.
+7. Taban seviye "risk yok" ise yükseltme uygulanmaz: 8 gün sonrası için teslim tarihi olan veya 3 – 7 gün kalmış bir `REVIEW_TESTING` görevi, etkenler olsa da `null` döner.
+8. Risk hesabı üye kapasitesinden (FR-073, FR-074) bağımsızdır; kapasite tanımsız olsa da risk hesaplanır.
+
+Eşikler ve taban seviye tabloları backend'de tek yerde (`backend/app/services/risk.py` başındaki sabitler) durur; kuralı değiştirmek için yalnızca bu sabitler düzenlenir.
 
 ### 12.2 Riskli görevler
 `GET /projects/{project_id}/risks?level=ORTA` · Proje üyesi · US-024 · Sprint 7
 
-**Yanıt · 200:** `risk_level`'ı belirtilen seviyede veya üstünde olan **Task** listesi (en riskliden aza)
+| Parametre | Varsayılan | Açıklama |
+|---|---|---|
+| `level` | `DUSUK` | En düşük risk seviyesi: `DUSUK`, `ORTA` veya `YUKSEK`. Bu seviye ve üstündeki görevler döner. Geçersiz değer: 422 `VALIDATION_ERROR` |
+
+**Yanıt · 200:** `risk_level`'ı belirtilen seviyede veya üstünde olan **Task** listesi (sayfalama yok). Sıralama en riskliden aza, aynı seviyede teslim tarihi yakın olan önce.
+
+`DONE` görevler riskleri olmadığı için (12.1), onay bekleyen ve reddedilen görevler ise aktif olmadıkları için listede yer almaz. Alt görevler kendi riskleriyle listelenir.
+
+**Hatalar:** 403 `PROJECT_ACCESS_DENIED`, 404 `PROJECT_NOT_FOUND`
 
 ### 12.3 Bugün ne yapmalıyım?
 `GET /me/today` · Giriş yapmış · US-042 · FR-069 · Sprint 7
