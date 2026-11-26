@@ -48,6 +48,12 @@ AI_ENDPOINTS = [
         "/api/v1/ai/tasks/{task_id}/summarize-comments",
         llm_output={"decisions": ["API önce yazılacak."], "open_questions": [], "summary": "Ekip API'de anlaştı."},
     ),
+    AIEndpoint(
+        "POST",
+        "/api/v1/ai/projects/{project_id}/extract-tasks",
+        llm_output={"suggestions": [{"title": "API geliştirme", "assignee_name": "Yonetici", "due_expression": "cumaya kadar"}]},
+        body={"text": "Yönetici cumaya kadar API'yi yazacak."},
+    ),
 ]
 
 

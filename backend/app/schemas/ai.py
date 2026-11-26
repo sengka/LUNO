@@ -91,3 +91,63 @@ class CommentSummaryResponse(BaseModel):
     decisions: list[str]
     open_questions: list[str]
     summary: str
+
+
+# --- 13.2 Toplantı notundan görev çıkarma (US-051, #302) -------------------------------------
+
+MEETING_NOTE_MAX_CHARS = 5000
+TASK_TITLE_MAX_CHARS = 200  # görev başlığı sınırı (6.2); öneri doğrudan görev olarak kaydedilebilsin
+
+
+class ExtractTasksRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=MEETING_NOTE_MAX_CHARS, description="Toplantı notu (en fazla 5000 karakter)")
+
+    @field_validator("text")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Toplantı notu boş olamaz.")
+        return value
+
+
+class ExtractedTaskLLM(BaseModel):
+    """Modelin her görev için döndürdüğü alanlar. Tarihi model hesaplamaz, ifadeyi aynen verir."""
+
+    title: str = ""
+    assignee_name: str | None = None
+    due_expression: str | None = None
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, value: str) -> str:
+        return value.strip()[:TASK_TITLE_MAX_CHARS]
+
+    @field_validator("assignee_name", "due_expression")
+    @classmethod
+    def blank_to_none(cls, value: str | None) -> str | None:
+        return value.strip() or None if value else None
+
+
+class ExtractTasksLLMOutput(BaseModel):
+    """Modelden beklenen JSON (13.2). Başlığı boş öneriler atılır; görev yoksa liste boştur."""
+
+    suggestions: list[ExtractedTaskLLM]
+
+    @field_validator("suggestions")
+    @classmethod
+    def drop_untitled(cls, value: list[ExtractedTaskLLM]) -> list[ExtractedTaskLLM]:
+        return [item for item in value if item.title]
+
+
+class TaskSuggestion(BaseModel):
+    title: str
+    assignee_id: int | None
+    assignee_name: str | None
+    due_date: date | None
+
+
+class ExtractTasksResponse(BaseModel):
+    """POST /ai/projects/{project_id}/extract-tasks yanıtı (13.2)."""
+
+    provider: LLMProviderName
+    suggestions: list[TaskSuggestion]
