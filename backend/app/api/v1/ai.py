@@ -31,11 +31,14 @@ from app.schemas.ai import (
     ExtractTasksRequest,
     ExtractTasksResponse,
     StoryPointsSuggestion,
+    SubtaskSuggestionsLLMOutput,
     SuggestPointsResponse,
+    SuggestSubtasksResponse,
     WeeklySummaryLLMOutput,
     WeeklySummaryResponse,
 )
 from app.services.ai_extract import build_suggestions, project_members
+from app.services.ai_subtasks import require_main_task, subtask_suggestions, task_with_subtasks_text
 from app.services.ai_summaries import comment_thread_text, require_enough_comments, weekly_summary_data
 from app.services.llm import (
     LLMService,
@@ -242,3 +245,48 @@ def extract_tasks_from_note(
         today_utc(),
     )
     return ExtractTasksResponse(provider=result.provider, suggestions=suggestions)
+
+
+# --- 13.3 Alt görev önerisi (US-052, FR-079) ----------------------------------------------------
+
+SUGGEST_SUBTASKS_INSTRUCTIONS = (
+    "Sen bir Scrum ekibine yardım eden asistansın. Sana bir görevin başlığı, açıklaması ve varsa mevcut "
+    "alt görevleri verilecek. Görevi tamamlamak için gereken işleri 3 ile 7 arası alt göreve böl. Her alt "
+    "görev için kısa, eylem bildiren bir Türkçe başlık yaz (ör. \"Form tasarımı\", \"JWT entegrasyonu\"). "
+    "Mevcut alt görevleri tekrar önerme; görev açıklamasında olmayan işler uydurma. "
+    'Yalnızca şu biçimde JSON döndür: {"suggestions": [{"title": "..."}]}'
+)
+
+# Yalnız yönetici (13.3). Görev zaten alt görevse modele gitmeden 400 döner ve istek sınırından düşmez (6.10).
+suggest_subtasks_access = ai_task_access(admin_only=True, precheck=require_main_task)
+
+
+@router.post(
+    "/tasks/{task_id}/suggest-subtasks",
+    response_model=SuggestSubtasksResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Alt görev önerisi (US-052 / 13.3)",
+)
+def suggest_subtasks(
+    ctx: AITaskContext = Depends(suggest_subtasks_access),
+    db: Session = Depends(get_db),
+    llm: LLMService = Depends(get_llm_service),
+):
+    """
+    Görevi alt görevlere bölmek için öneri üretir (FR-079, sözleşme 13.3).
+    Mevcut alt görevler modele verilir; tekrar eden ve mevcutla aynı başlıklar atılır.
+    Erişim: Yönetici ve görevin projesinin üyesi (1.2).
+    Hatalar: 403 FORBIDDEN, 404 TASK_NOT_FOUND, 403 PROJECT_ACCESS_DENIED,
+    400 NESTED_SUBTASK_NOT_ALLOWED (görev zaten alt görev), 429 RATE_LIMITED, 503 LLM_UNAVAILABLE.
+    Öneriler kaydedilmez; kullanıcı seçtiklerini 6.10 ile ekler.
+    """
+    text, existing_titles = task_with_subtasks_text(db, ctx.task)
+    result = llm.complete_json(
+        system_prompt(SUGGEST_SUBTASKS_INSTRUCTIONS),
+        user_data(text),
+        SubtaskSuggestionsLLMOutput,
+    )
+    return SuggestSubtasksResponse(
+        provider=result.provider,
+        suggestions=subtask_suggestions(result.data.suggestions, existing_titles),
+    )

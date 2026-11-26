@@ -151,3 +151,36 @@ class ExtractTasksResponse(BaseModel):
 
     provider: LLMProviderName
     suggestions: list[TaskSuggestion]
+
+
+# --- 13.3 Alt görev önerisi (US-052, #303) -----------------------------------------------------
+
+class SubtaskTitleLLM(BaseModel):
+    title: str = ""
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, value: str) -> str:
+        return value.strip()[:TASK_TITLE_MAX_CHARS]
+
+
+class SubtaskSuggestionsLLMOutput(BaseModel):
+    """Modelden beklenen JSON (13.3). Başlığı boş öneriler atılır."""
+
+    suggestions: list[SubtaskTitleLLM]
+
+    @field_validator("suggestions")
+    @classmethod
+    def drop_untitled(cls, value: list[SubtaskTitleLLM]) -> list[SubtaskTitleLLM]:
+        return [item for item in value if item.title]
+
+
+class SubtaskSuggestion(BaseModel):
+    title: str
+
+
+class SuggestSubtasksResponse(BaseModel):
+    """POST /ai/tasks/{task_id}/suggest-subtasks yanıtı (13.3)."""
+
+    provider: LLMProviderName
+    suggestions: list[SubtaskSuggestion]

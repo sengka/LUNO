@@ -54,6 +54,11 @@ AI_ENDPOINTS = [
         llm_output={"suggestions": [{"title": "API geliştirme", "assignee_name": "Yonetici", "due_expression": "cumaya kadar"}]},
         body={"text": "Yönetici cumaya kadar API'yi yazacak."},
     ),
+    AIEndpoint(
+        "POST",
+        "/api/v1/ai/tasks/{task_id}/suggest-subtasks",
+        llm_output={"suggestions": [{"title": "Form tasarımı"}, {"title": "JWT entegrasyonu"}]},
+    ),
 ]
 
 
