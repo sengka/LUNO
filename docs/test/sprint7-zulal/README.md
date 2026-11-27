@@ -29,3 +29,11 @@ Kapsam: #278, #281, #287, #292. Güncel görevlerde yorum veya ek düzeltme tale
 - PR taslak kalmalı. Board kartları güncellenmedi; görevler kapatılmadı.
 
 Yerel bağlantılar: http://localhost:5173/ ve http://localhost:5173/projeler/1 . Backend localhost:8000. Sunucular kontrol için çalışır bırakılır.
+
+## Ek gerçek tarayıcı kontrolü — PR #317
+
+Yeni sekmeyle önceki hata sayfası engeli aşıldı; mevcut demo yöneticiyle giriş yapıldı. Gerçek API üzerinde riskli görev listesi ve Yüksek filtre seçimi, riskli görev bağlantısından görev #8 detayına geçiş ve detayda Yüksek risk rozeti görüldü. Kanban Done sütununda ve mevcut Done görev #2 detayında risk rozeti yok. Üye tablosunda tanımsız kapasite ve tanımlı 13/8 puanlar görüldü; tanımsız üyeler için kapasite oranı/uyarısı yok.
+
+/me/today 404 hatası masaüstü ve 390×844 mobilde açık hata mesajı olarak gösterildi. Tekrar dene yeniden hata durumuna döndü; boş başarı gösterilmedi. Geliştirme görevlerinin durumu değiştirilmedi. Gerçek Done→açık mutasyon/önbellek kontrolü, today dolu/boş başarılı yanıtı ve kişiye özel sıralama henüz tarayıcıda doğrulanmadı; otomatik testler ayrı kanıttır. #291 ve #283 bağımlılıkları sürüyor.
+
+Beş gerçek ekran görüntüsü: today-api-error.jpg, today-mobile-error.jpg, risks-and-capacity.jpg, risk-detail.jpg, done-no-risk.jpg. Bunlar PR dosyalarında görünür. PR taslak kalır.
