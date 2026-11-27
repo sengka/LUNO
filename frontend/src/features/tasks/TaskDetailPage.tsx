@@ -1,3 +1,4 @@
+import { RiskBadge } from './RiskBadge'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -92,6 +93,7 @@ function TaskDetailContent() {
                 <h2 className="mb-6 text-lg font-semibold text-primary">Görev bilgileri</h2>
                 <dl className="grid gap-6 text-sm">
 
+                  <RiskBadge task={task} />
                   <TaskStatusField task={task} />
                   <TaskAssigneeField task={task} />
                   {[

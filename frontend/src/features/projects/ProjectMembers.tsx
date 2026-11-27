@@ -1,3 +1,4 @@
+import { CapacityValue } from './CapacityValue'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -181,7 +182,7 @@ export function ProjectMembers({ projectId }: Props) {
                   <th scope="col" className="px-3 py-3">Ad soyad</th>
                   <th scope="col" className="px-3 py-3">E-posta</th>
                   <th scope="col" className="px-3 py-3">Sistem rolü</th>
-                  <th scope="col" className="px-3 py-3">Teknik rol</th>
+                  <th scope="col" className="px-3 py-3">Teknik rol</th><th scope="col" className="px-3 py-3">Kapasite</th>
                   {isAdmin && (
                     <th scope="col" className="px-3 py-3">İşlem</th>
                   )}
@@ -204,7 +205,7 @@ export function ProjectMembers({ projectId }: Props) {
                     </td>
                     <td className="px-3 py-3">
                       {member.technical_role || 'Belirtilmedi'}
-                    </td>
+                    </td><td className="px-3 py-3"><CapacityValue points={member.capacity_points} /></td>
                     {isAdmin && (
                       <td className="px-3 py-3">
                         {member.user.id === user?.id ? (
