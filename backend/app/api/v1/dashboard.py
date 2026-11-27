@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.api.v1.tasks import build_task_response
 from app.database import get_db
-from app.models.enums import ACTIVE_TASK_STATUSES, TaskStatus
+from app.models.enums import ACTIVE_TASK_STATUSES, OPEN_TASK_STATUSES, TaskStatus
 from app.models.notification import Notification
 from app.models.project import Project
 from app.models.project_member import ProjectMember
@@ -18,8 +18,6 @@ from app.schemas.dashboard import DashboardProject, DashboardResponse
 router = APIRouter(tags=["Dashboard"])
 
 UPCOMING_LIMIT = 5
-# Bitmemiş (açık) aktif görevler: DONE dışındaki aktif durumlar
-OPEN_TASK_STATUSES = tuple(s for s in ACTIVE_TASK_STATUSES if s != TaskStatus.DONE)
 
 
 @router.get(

@@ -23,6 +23,26 @@ ACTIVE_TASK_STATUSES = (
     TaskStatus.DONE,
 )
 
+# Bitmemiş (açık) aktif görevler: DONE dışındaki aktif durumlar. Dashboard'daki açık görev
+# sayısı (10.1) ve risk hesabındaki görev yükü (12.1) aynı tanımı kullanır.
+OPEN_TASK_STATUSES = tuple(s for s in ACTIVE_TASK_STATUSES if s != TaskStatus.DONE)
+
+
+class RiskLevel(str, enum.Enum):
+    """Gecikme risk seviyesi (sözleşme 1.3 ve 12.1, FR-070 – FR-072).
+
+    Sıralama en düşükten en yükseğe; `RISK_LEVEL_ORDER` bu sırayı kullanır.
+    """
+
+    DUSUK = "DUSUK"
+    ORTA = "ORTA"
+    YUKSEK = "YUKSEK"
+
+
+# Risk seviyeleri en düşükten en yükseğe. Bir basamak yükseltme ve "bu seviye ve üstü"
+# filtresi (12.2) bu sırayı kullanır.
+RISK_LEVEL_ORDER = (RiskLevel.DUSUK, RiskLevel.ORTA, RiskLevel.YUKSEK)
+
 
 class Priority(str, enum.Enum):
     DUSUK = "DUSUK"

@@ -10,7 +10,7 @@ from app.models.project import Project
 from app.models.task import Task
 from app.models.label import Label
 from app.models.project_member import ProjectMember
-from app.models.enums import ACTIVE_TASK_STATUSES, NotificationType, TaskStatus
+from app.models.enums import ACTIVE_TASK_STATUSES, NotificationType, RiskLevel, TaskStatus
 from app.models.notification import Notification
 from app.schemas.task import (
     TaskCreateRequest,
@@ -28,8 +28,16 @@ from app.schemas.task import (
     GanttItem,
     GanttResponse,
 )
+from app.services.capacity import ensure_assignment_capacity
 from app.services.tasks import create_task
 from app.services.sprints import validate_sprint_for_project
+from app.services.risk import (
+    RISKABLE_STATUSES,
+    calculate_risk_level,
+    levels_at_or_above,
+    load_open_task_counts,
+    risk_sort_key,
+)
 from app.schemas.project import UserSummary
 from app.core.exceptions import (
     CustomAPIException,
@@ -61,11 +69,29 @@ def _user_summary(user: User | None) -> UserSummary | None:
     return UserSummary(id=user.id, full_name=user.full_name, avatar_url=user.avatar_url)
 
 
-def build_task_response(task: Task) -> TaskResponse:
+def _risk_level_value(
+    task: Task,
+    *,
+    open_task_counts: dict[tuple[int, int], int] | None = None,
+    today: date | None = None,
+) -> str | None:
+    level = calculate_risk_level(task, today=today, open_task_counts=open_task_counts)
+    return level.value if level is not None else None
+
+
+def build_task_response(
+    task: Task,
+    *,
+    open_task_counts: dict[tuple[int, int], int] | None = None,
+    today: date | None = None,
+) -> TaskResponse:
     """Task modelini sözleşme 2. bölümdeki Task nesnesine çevirir.
 
-    Henüz tablosu olmayan alanlar (depends_on)
-    boş/0 döner; risk_level Sprint 7'de (bölüm 12.1) hesaplanacağı için şimdilik null.
+    Henüz tablosu olmayan alanlar (depends_on) boş/0 döner.
+
+    risk_level her istekte hesaplanır, veritabanına yazılmaz (bölüm 12.1, FR-070 – FR-072).
+    Çok görev dönen uç noktalar, her görev için ayrı sorgu atılmasın diye
+    `load_open_task_counts` çıktısını `open_task_counts` ile geçirir.
     """
     # Alt görev sayıları yalnızca aktif alt görevleri sayar (sözleşme 1.3, #219-5):
     # onay bekleyen ve reddedilen alt görevler ilerlemeyi düşürmez.
@@ -88,7 +114,7 @@ def build_task_response(task: Task) -> TaskResponse:
         subtask_count=len(subtasks),
         subtask_done_count=sum(1 for st in subtasks if st.status == TaskStatus.DONE),
         depends_on=[],
-        risk_level=None,
+        risk_level=_risk_level_value(task, open_task_counts=open_task_counts, today=today),
         comment_count=len(task.comments) if hasattr(task, "comments") and task.comments is not None else 0,
         file_count=len(task.files) if task.files is not None else 0,
         created_at=task.created_at,
@@ -210,8 +236,9 @@ def list_project_tasks(
     total = query.count()
     tasks = query.order_by(Task.id.desc()).offset((page - 1) * limit).limit(limit).all()
 
+    open_task_counts = load_open_task_counts(db, tasks)
     return TaskListResponse(
-        items=[build_task_response(t) for t in tasks],
+        items=[build_task_response(t, open_task_counts=open_task_counts) for t in tasks],
         total=total,
         page=page,
         limit=limit,
@@ -268,9 +295,12 @@ def get_project_board(
 
     tasks = query.order_by(Task.id.asc()).all()
 
+    open_task_counts = load_open_task_counts(db, tasks)
     tasks_by_status = {s.value: [] for s in active_statuses}
     for t in tasks:
-        tasks_by_status[t.status.value].append(build_task_response(t))
+        tasks_by_status[t.status.value].append(
+            build_task_response(t, open_task_counts=open_task_counts)
+        )
 
     columns = [
         BoardColumn(status=s.value, tasks=tasks_by_status[s.value])
@@ -441,6 +471,68 @@ def get_project_gantt(
         ),
         items=items,
     )
+
+
+@router.get(
+    "/projects/{project_id}/risks",
+    response_model=list[TaskResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Riskli görevler (US-024 / 12.2)",
+)
+def list_project_risks(
+    project_id: int,
+    level: RiskLevel = Query(
+        RiskLevel.DUSUK,
+        description="En düşük risk seviyesi (DUSUK, ORTA, YUKSEK); bu seviye ve üstü döner",
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Projenin riskli görevlerini döner (US-024, FR-070, FR-071, sözleşme 12.2).
+    Erişim: Proje üyesi (FR-013).
+    - Proje yoksa 404 PROJECT_NOT_FOUND
+    - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
+    - `level` geçersizse 422 VALIDATION_ERROR
+    - Risk seviyesi istenen seviyede veya üstünde olan görevler döner; en riskliden aza,
+      aynı seviyede teslim tarihi yakın olan önce.
+    - DONE görevlerin riski yoktur (FR-072), onay bekleyen ve reddedilen görevler listelenmez.
+    - Alt görevler de kendi riskleriyle listelenir.
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise ProjectNotFoundException()
+
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.project_id == project_id, ProjectMember.user_id == current_user.id)
+        .first()
+    )
+    if not member:
+        raise ProjectAccessDeniedException()
+
+    candidates = (
+        db.query(Task)
+        .filter(
+            Task.project_id == project_id,
+            Task.status.in_(RISKABLE_STATUSES),
+            Task.due_date.isnot(None),
+        )
+        .all()
+    )
+
+    open_task_counts = load_open_task_counts(db, candidates)
+    wanted = levels_at_or_above(level)
+    risky = []
+    for task in candidates:
+        task_level = calculate_risk_level(task, open_task_counts=open_task_counts)
+        if task_level in wanted:
+            risky.append((task, task_level))
+
+    risky.sort(key=lambda pair: risk_sort_key(*pair))
+    return [
+        build_task_response(task, open_task_counts=open_task_counts) for task, _ in risky
+    ]
 
 
 @router.get(
@@ -618,7 +710,9 @@ def update_task_assignee(
     - Proje üyesi değilse 403 PROJECT_ACCESS_DENIED
     - Yönetici değilse 403 FORBIDDEN
     - Atanan kişi projenin üyesi değilse 400 ASSIGNEE_NOT_MEMBER
-    - Kapasite kontrolü Sprint 7'de eklenecektir; confirm_over_capacity kabul edilip yok sayılır.
+    - Üyenin kapasitesi tanımsızsa kapasite kontrolü yapılmaz, uyarı verilmez (US-044, FR-074).
+    - Kapasitesi tanımlı üyede aşım kontrolü ve 409 CAPACITY_EXCEEDED US-025 (#283) ile gelecek;
+      `confirm_over_capacity` şimdilik kabul edilip yok sayılır.
     """
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
@@ -643,6 +737,12 @@ def update_task_assignee(
         )
         if not target_member:
             raise AssigneeNotMemberException()
+
+    # Kapasite kuralları tek yerde (sözleşme 6.6): kapasitesi tanımsız üyede kontrol
+    # yapılmaz, atama engellenmez ve uyarı verilmez (US-044, FR-074).
+    ensure_assignment_capacity(
+        db, task.project_id, assignee_in.assignee_id, assignee_in.confirm_over_capacity
+    )
 
     _preserve_legacy_completion_time(task)
     previous_assignee_id = task.assignee_id
