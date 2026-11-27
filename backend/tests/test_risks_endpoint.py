@@ -124,6 +124,24 @@ def test_done_task_has_null_risk_level(client, setup):
     assert resp.json()["risk_level"] is None
 
 
+def test_done_reopen_updates_detail_board_and_risks(client, setup):
+    task = _task(setup["db"], setup["project"], "Izole durum gecisi", days_left=-2)
+    headers = setup["admin_headers"]
+    task_url = f"/api/v1/tasks/{task.id}"
+    project_url = f"/api/v1/projects/{setup['project'].id}"
+    for status, expected in [("DONE", None), ("IN_PROGRESS", "YUKSEK")]:
+        response = client.patch(task_url + "/status", json={"status": status}, headers=headers)
+        assert response.status_code == 200
+        assert response.json()["risk_level"] == expected
+        assert client.get(task_url, headers=headers).json()["risk_level"] == expected
+        board = client.get(project_url + "/board", headers=headers).json()
+        row = next(t for column in board["columns"] for t in column["tasks"] if t["id"] == task.id)
+        assert row["status"] == status
+        assert row["risk_level"] == expected
+        risks = client.get(project_url + "/risks", headers=headers).json()
+        assert (task.id in [t["id"] for t in risks]) == (status != "DONE")
+
+
 def test_status_change_to_done_clears_risk_level(client, setup):
     """Görev Done'a geçince aynı yanıtta risk_level null olur (US-043)."""
     task = _task(

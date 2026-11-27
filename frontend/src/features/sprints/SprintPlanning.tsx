@@ -390,7 +390,7 @@ function SelectedSprintCard({ sprint, tasks, loading, canEdit, removingId, onRem
               <span className="text-sm font-normal text-muted-foreground">puan</span>
             </span>
           ) : (
-            <span className="text-sm">Sınır yok · {sprint.total_points} puan</span>
+            <span className="text-sm">Kapasite tanımsız · {sprint.total_points} puan</span>
           )}
         </div>
       </div>

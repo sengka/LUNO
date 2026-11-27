@@ -1,3 +1,4 @@
+import { RiskBadge } from './RiskBadge'
 import { Link } from 'react-router'
 import { CalendarIcon, MessageCircleIcon, PaperclipIcon } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -65,6 +66,7 @@ export function TaskCard({ task, dragging = false }: { task: Task; dragging?: bo
 
       <p className={cn('break-words font-semibold leading-snug', done && 'text-muted-foreground')}>{task.title}</p>
 
+      <RiskBadge task={task} />
       {task.priority && (
         <span
           className={cn(

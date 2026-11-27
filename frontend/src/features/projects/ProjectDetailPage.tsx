@@ -1,3 +1,4 @@
+import { TaskInsights } from '@/features/tasks/TaskInsights'
 import { ActiveSprintProgress } from './ActiveSprintProgress'
 import { lazy, Suspense, useState } from 'react'
 import { Link, useParams } from 'react-router'
@@ -263,6 +264,7 @@ function ProjectDetailContent() {
       <ActiveSprintProgress projectId={project.id} />
       <ProjectWeeklySummary projectId={project.id} />
       {isAdmin && <Link to={`/projeler/${project.id}/raporlar`} className="text-brand underline">Proje raporları</Link>}
+      <TaskInsights projectId={project.id} />
       <ProjectMembers projectId={project.id} />
             {isAdmin && <ProjectInvitePanel projectId={project.id} />}
     </div>
